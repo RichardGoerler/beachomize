@@ -10,7 +10,8 @@ WON = 1
 DIF = 2
 POI = 3
 POI_OPP = 4
-WAI = 5
+MMR = 5
+WAI = 6
 
 def calc_game_count(P, W):
     waitlist = []
@@ -64,7 +65,7 @@ class Turnier():
                 hour += 100
             self.schedule.append(minute+hour)
 
-    def __init__(self, filename=None, courts=3, start_time=2100, matchmaking=True, display_mmr=False):
+    def __init__(self, filename=None, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
         if filename is None:
             filename = FILENAME
         with open(filename) as f:
@@ -77,16 +78,17 @@ class Turnier():
             names.append(spl[0])
             if len(spl[0]) > self.max_name_len:
                 max_name_len = len(spl[0])
-            init_mmr.append(float(spl[1]))   #as float because values are divided later depending on game number
+            init_mmr.append(int(spl[1]))
         self.names = np.array(names)
-        self.init_mmr = np.array(init_mmr)
+        mmrlist = np.array(init_mmr)[:,None]
         self.matchmaking = matchmaking   #whether to sort teams before making matches (True) or to randomize (False)
         self.display_mmr = display_mmr   #whether to show mmr when announcing games
+        self.orgatime = orgatime
         self.p = len(self.names)
         prange = [[el] for el in range(self.p)]
         pointlist = [[0]]*self.p
         pauselist = pointlist
-        self.players = np.concatenate((prange,pointlist,pointlist,pointlist,pointlist,pauselist), axis=1)
+        self.players = np.concatenate((prange,pointlist,pointlist,pointlist,pointlist,mmrlist,pauselist), axis=1)
         self.c = courts
         self.a = self.c*4
         self.w = self.p-self.a
@@ -110,7 +112,7 @@ class Turnier():
         print("Anzahl der Spiele auf {} gesetzt. Rizemode auf {} gesetzt.".format(self.g,self.rizemode))
         self.start_time = start_time
         self._make_schedule()
-        print("Zeit für jedes Spiel: {} Minuten + 3 Minuten Organisation.".format(self.timeframe-3))
+        print("Zeit für jedes Spiel: {} Minuten + {} Minuten Organisation.".format(self.timeframe-self.orgatime, self.orgatime))
         self.i = 0     #number of games played so far
         print("Spielplan:")
         for i, t in enumerate(self.schedule):
@@ -145,11 +147,16 @@ class Turnier():
                 raise Exception("Player {} cannot wait anymore".format(self.names[ip]))
 
         print("Erstelle Spiel Nummer {}.".format(self.i+1))
-        print("Planmäßiger Beginn um {:02d}:{:02d} Uhr".format(self.schedule[self.i]/100, self.schedule[self.i]%100))
+        hour = self.schedule[self.i]/100
+        minute = self.schedule[self.i]%100
+        minute += self.timeframe - self.orgatime
+        while minute > 60:
+            hour += 1
+            minute -= 60
+        print("Planmäßig {:02d}:{:02d} - {:02d}:{:02d} Uhr".format(self.schedule[self.i]/100, self.schedule[self.i]%100, hour, minute))
         self.i += 1  # increment game counter
         if self.i == self.g:
             print("Dies ist das letzte Spiel!")
-
         min_wait = np.min(self.players[noreq,WAI])
         min_indices = np.intersect1d(np.where(min_wait == self.players[:,WAI])[0],noreq)
         if not len(min_indices) < wdif:
@@ -166,8 +173,7 @@ class Turnier():
         teams = self.players[team_indices]
 
         if self.matchmaking:
-            mmr = np.sum(teams[:,:,WON].astype(float)/2,axis=1)    #calculate match-making-ratio for each team
-            mmr += np.sum(self.init_mmr[team_indices]/(2**self.i-1),axis=1)   #decay of influence of initial mmr (power of two)
+            mmr = np.mean(teams[:,:,MMR].astype(float),axis=1)    #calculate match-making-ratio for each team
             mmr_sorted_indices = np.argsort(mmr)[::-1]   #no randomization of same mrr teams needed because players were already shuffled
             teams_sorted = teams[mmr_sorted_indices]     #now we have an array of teams that are descendingly sorted by mmr (strongest come first).
         else:
@@ -246,6 +252,11 @@ class Turnier():
                         self.players[teams_sorted[2 * ci, 1, IND], POI_OPP] += score2
                         self.players[teams_sorted[2 * ci + 1, 0, IND], POI] += score2
                         self.players[teams_sorted[2 * ci + 1, 1, IND], POI] += score2
+
+                        self.players[teams_sorted[2 * ci, 0, IND], MMR] += np.sign(scorediff)
+                        self.players[teams_sorted[2 * ci, 1, IND], MMR] += np.sign(scorediff)
+                        self.players[teams_sorted[2 * ci + 1, 0, IND], MMR] += np.sign(-scorediff)
+                        self.players[teams_sorted[2 * ci + 1, 1, IND], MMR] += np.sign(-scorediff)
                     entered += 1
 
     def stats(self, rize=True):
