@@ -56,7 +56,7 @@ class Turnier:
                 hour += 100
             self.schedule.append(minute+hour)
 
-    def __init__(self, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
+    def __init__(self, gui, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
         names, init_mmr = nogui.in_players()
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float),
@@ -80,7 +80,7 @@ class Turnier:
             self.w = self.p-self.a
             nogui.out_court_number_changed(self.c)
         goodlist, waitlist, playlist = calc_game_count(self.p, self.w)
-        nogui.out_player_count(self.p)
+        gui.out_player_count(self.p)
         self.g = nogui.in_game_count(goodlist, waitlist, playlist)
         self.rizemode = 0
         if self.g in waitlist:

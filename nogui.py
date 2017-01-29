@@ -71,6 +71,12 @@ def out_stats(players, rize=True, final=False):
         print("{:<8} {:<8} {:<8} {:<8}".format(pl.name, pl.score / 2, pl.diff, pl.points))
     print("")
 
+def out_reset_partner_matrix_error():
+    print("Erstellen von Teams Fehlgeschlagen. Partner-Matrix wird vorzeitig zurückgesetzt.")
+
+def out_reset_partner_matrix():
+    print("Teamrotation komplett. Partner-Matrix wird planmäßig zurückgesetzt.")
+
 def in_players():
     filename = FILENAME
     with open(filename) as f:
