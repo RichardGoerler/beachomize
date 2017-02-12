@@ -3,9 +3,11 @@ import os
 
 class Dialog(tk.Toplevel):
 
-    def __init__(self, parent, title = None):
+    def __init__(self, parent, gui, title="Beach with Friends"):
 
         tk.Toplevel.__init__(self, parent)
+        self.iconbitmap("favicon.ico")
+        self.gui = gui
         self.transient(parent)
 
         if title:

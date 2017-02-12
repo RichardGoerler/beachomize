@@ -87,7 +87,7 @@ class Turnier:
             nogui.out_court_number_changed(self.c)
         goodlist, waitlist, playlist = calc_game_count(self.p, self.w)
         self.gui.out_player_count(self.p)
-        self.g = nogui.in_game_count(goodlist, waitlist, playlist)
+        self.g = self.gui.in_game_count(goodlist, waitlist, playlist)
         self.rizemode = 0
         if self.g in waitlist:
             self.rizemode = -1
@@ -279,3 +279,6 @@ class Turnier:
     def continue_after_load(self):
         if self.state == 1:
             self.game_announce_end()
+
+    def __getstate__(self):
+        return dict((k, v) for (k, v) in self.__dict__.iteritems() if "gui" not in k)
