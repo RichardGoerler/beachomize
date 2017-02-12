@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# TODO: during team making, in every iteration step sort row indices in ascending order of the number of zero entries. Choose one of those with the fewest at random.
-
-# TODO: choose waiting players systematically, i.e. of those with lowest waiting values always take the first ones.
-
 import nogui
 
 import numpy as np
+
+import pickle
+
+
+def load(gui, filename="saved.p"):
+    with open(filename, 'rb') as f:
+        obj = pickle.load(f)
+    obj.gui = gui
+    return obj
 
 
 def calc_game_count(p, w):
@@ -57,14 +62,15 @@ class Turnier:
             self.schedule.append(minute+hour)
 
     def __init__(self, gui, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
-        names, init_mmr = nogui.in_players()
+        self.gui = gui
+        names, self.init_mmr = nogui.in_players()
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float),
                        ('wait', int)])
         self.players = np.recarray(self.p, dtype=dt)
         self.players.index = np.arange(self.p)
         self.players.name = names
-        self.players.mmr = init_mmr
+        self.players.mmr = self.init_mmr
         self.players.score = self.players.diff = self.players.points = self.players.wait = [0]*self.p
         self.players_copy = None
         self.partner_matrix = np.zeros((self.p, self.p))
@@ -80,7 +86,7 @@ class Turnier:
             self.w = self.p-self.a
             nogui.out_court_number_changed(self.c)
         goodlist, waitlist, playlist = calc_game_count(self.p, self.w)
-        gui.out_player_count(self.p)
+        self.gui.out_player_count(self.p)
         self.g = nogui.in_game_count(goodlist, waitlist, playlist)
         self.rizemode = 0
         if self.g in waitlist:
@@ -98,6 +104,11 @@ class Turnier:
         self.games_names = []
         self.results = []
         self.results = [[[]]*self.c]*self.g
+
+        self.state = 0     # 0: after init or after entering results 2: expect results
+        with open("saved.p", 'wb') as f:
+            pickle.dump(self, f)
+
 
     def game(self, wait_request=None):
         # WAITING
@@ -152,8 +163,10 @@ class Turnier:
             playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
             team_indices = []
             for ti in range(2*self.c):  # ti = team index
-                # choose random player
-                pid = np.random.randint(len(playing_this_turn))
+                counts = np.array([len(row)-np.count_nonzero(row) for row in playing_partner_matrix])
+                lexsort_ind = np.lexsort((np.random.rand(len(counts)), counts))
+                # choose player with fewest matching possibilities
+                pid = lexsort_ind[0]
                 pl = playing_this_turn[pid]
                 # delete pl's column from temp matrix and delete pl from playing_this_turn
                 playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=1)
@@ -186,19 +199,26 @@ class Turnier:
 
         # MATCHMAKING
         if self.matchmaking:
-            mmr = np.mean(teams[:, :].mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
-            mmr_sorted_indices = np.argsort(mmr)[::-1]
-            team_indices_sorted = teams[mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
+            self.temp_mmr = np.mean(teams[:, :].mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
+            self.temp_mmr_sorted_indices = np.argsort(self.temp_mmr)[::-1]
+            team_indices_sorted = teams[self.temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
         else:
             team_indices_sorted = teams
-        players_sorted = self.players[team_indices_sorted.index]
+        self.temp_players_sorted = self.players[team_indices_sorted.index]
         self.games.append(team_indices_sorted.index)
 
+        self.state = 1
+        with open("saved.p", 'wb') as f:
+            pickle.dump(self, f)
+
+        self.game_announce_end()
+
+    def game_announce_end(self):
         if self.display_mmr and self.matchmaking:
-            sorted_mmr = mmr[mmr_sorted_indices]
-            nogui.out_game_announce_teams(players_sorted, sorted_mmr)
+            sorted_mmr = self.temp_mmr[self.temp_mmr_sorted_indices]
+            nogui.out_game_announce_teams(self.temp_players_sorted, sorted_mmr)
         else:
-            nogui.out_game_announce_teams(players_sorted)
+            nogui.out_game_announce_teams(self.temp_players_sorted)
 
         # EXPECTING RESULTS
         self.res()
@@ -245,9 +265,17 @@ class Turnier:
                     self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff
                     self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff
 
+        self.state = 0
+        with open("saved.p", 'wb') as f:
+            pickle.dump(self, f)
+
     def stats(self, rize=True, final=False):
         nogui.out_stats(self.players, rize, final)
 
     def cor_res(self):
         self.players = np.copy(self.players_copy)
         self.res()
+
+    def continue_after_load(self):
+        if self.state == 1:
+            self.game_announce_end()

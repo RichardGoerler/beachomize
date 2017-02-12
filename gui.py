@@ -36,25 +36,53 @@ class MyDialog(dialog.Dialog):
     def apply(self):
         print(self.result)  # or something
 
+class WelcomeWindow(dialog.Dialog):
+    def __init__(self, parent, gui, title=None):
+        self.gui = gui
+        dialog.Dialog.__init__(self, parent, title)
+
+    def body(self, master):
+        tk.Label(master, text="Beach with Friends - Turniermanager").grid(row=0)
+        return None
+
+    def buttonbox(self):
+        box = tk.Frame(self)
+
+        w = tk.Button(box, text="Neu", width=10, command=self.new, default=tk.ACTIVE)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w = tk.Button(box, text="Laden", width=10, command=self.ok)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+
+        box.pack()
+
+    def validate(self):
+        try:
+            self.parent.tur = turnier.load(self.gui)
+        except IOError:
+            tkMessageBox.showwarning("IOError", "Kein gespeichertes Turnier vorhanden.")
+            return 0
+
+    def apply(self):
+        self.tur.continue_after_load()
+
+    def new(self):
+        self.withdraw()
+        self.update_idletasks()
+
+        self.parent.tur = turnier.Turnier(self.gui)
+
+        self.cancel()
 
 class GUI:
     def __init__(self):
         self.root = tk.Tk()
         self.screen_resolution = [self.root.winfo_screenwidth(), self.root.winfo_screenheight()]
-        #self.welcome = tk.Toplevel()
-        #welcome_dims = self.dims_by_scale([0.15,0.3])
-        #welcome_coords = self.center_coords(welcome_dims)
-        #self.welcome.geometry("{}x{}+{}+{}".format(welcome_dims[0], welcome_dims[1], welcome_coords[0], welcome_coords[1]))
-        #self.welcome.title("Beach with Friends")
-        #tk.Message(self.welcome, text="Beach with Friends - Turniermanager", width=200).pack()
-        #tk.Button(self.welcome, text="START", command=self.start_button_press).pack()
+        self.tur = None
 
-        self.welcome_message()
-        self.test = MyDialog(self.root, "Dies ist ein Test")
-        turnier.Turnier(self)
-
-        #self.root.withdraw()
-        self.root.mainloop()
+        self.welcome = WelcomeWindow(self.root, self)
+        if self.tur is not None:
+            #self.root.withdraw()
+            self.root.mainloop()
 
     def dims_by_scale(self, scale):
         if hasattr(scale, '__iter__'):
