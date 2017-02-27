@@ -14,27 +14,6 @@ def load(gui, filename="saved.p"):
     return obj
 
 
-def calc_game_count(p, w):
-    waitlist = []
-    playlist = []
-    goodlist = []
-    f = w    # player position in round waiting queue
-    i = 1    # number of games played
-    r = 2    # number of waiting rounds to test (when 1, calculation is aborted the first time f is zero)
-    while not r == 0:
-        if p == f+1:    # if one player (Rize) can play a game more to make it work
-            playlist.append(i)
-        if f == 1:      # if one player (Rize) can wait a game more
-            waitlist.append(i)
-        if f == 0:      # if it works regularly
-            goodlist.append(i)
-            r -= 1
-        f += w
-        f %= p
-        i += 1
-    return goodlist, waitlist, playlist
-
-
 def lcm1(f):
     ff = f
     while not ff == int(ff):
@@ -61,9 +40,25 @@ class Turnier:
                 hour += 100
             self.schedule.append(minute+hour)
 
-    def __init__(self, gui, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
-        self.gui = gui
-        names, self.init_mmr = nogui.in_players()
+    def calc_game_counts(self):
+        f = self.w  # player position in round waiting queue
+        i = 1  # number of games played
+        r = 2  # number of waiting rounds to test (when 1, calculation is aborted the first time f is zero)
+        while not r == 0:
+            if self.p == f + 1:  # if one player (Rize) can play a game more to make it work
+                self.playlist.append(i)
+            if f == 1:  # if one player (Rize) can wait a game more
+                self.waitlist.append(i)
+            if f == 0:  # if it works regularly
+                self.goodlist.append(i)
+                r -= 1
+            f += self.w
+            f %= self.p
+            i += 1
+
+    def __init__(self, names, mmr, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
+        self.init_mmr = mmr
+        self.start_time = start_time
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float),
                        ('wait', int)])
@@ -84,33 +79,36 @@ class Turnier:
             self.c -= 1
             self.a = self.c*4
             self.w = self.p-self.a
-            nogui.out_court_number_changed(self.c)
-        goodlist, waitlist, playlist = calc_game_count(self.p, self.w)
-        self.gui.out_player_count(self.p)
-        self.g = self.gui.in_game_count(goodlist, waitlist, playlist)
         self.rizemode = 0
-        if self.g in waitlist:
-            self.rizemode = -1
-        elif self.g in playlist:
-            self.rizemode = 1
-        self.players[0].wait = self.rizemode
-        self.maxwait = (self.g * self.w + self.rizemode) / self.p
-        nogui.out_game_count(self.g, self.rizemode)
-        self.start_time = start_time
-        self._make_schedule()
         self.i = 0  # number of games played so far
-        nogui.out_schedule(self.timeframe, self.orgatime, self.schedule)
+        self.state = 0  # 0: after init or after entering results 2: expect results
         self.games = []
         self.games_names = []
         self.results = []
-        self.results = [[[]]*self.c]*self.g
+        self.waitlist = []
+        self.playlist = []
+        self.goodlist = []
+        self.calc_game_counts()
+        self.g = 0
+        self.maxwait = 0
 
-        self.state = 0     # 0: after init or after entering results 2: expect results
+    def set_game_count(self, g):
+        if self.g in self.waitlist:
+            self.rizemode = -1
+        elif self.g in self.playlist:
+            self.rizemode = 1
+        self.players[0].wait = self.rizemode
+        self.maxwait = (self.g * self.w + self.rizemode) / self.p
+        self._make_schedule()
+        self.results = [[[]]*self.c]*self.g
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
 
     def game(self, wait_request=None):
+        if self.g < 1:
+            return -1
+        ret = 0    #0 no matrix reset, 1 regular matrix reset, 2 error matrix reset
         # WAITING
         if wait_request is None:
             waitreq = []
@@ -157,6 +155,7 @@ class Turnier:
         if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
             nogui.out_reset_partner_matrix()
             self.partner_matrix = np.zeros((self.p, self.p))
+            ret = 1
         teams_ready = False
         while not teams_ready:
             playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
@@ -176,8 +175,8 @@ class Turnier:
                 # get indices of still zero entries and select one at random
                 zero_entries_indices = np.where(player_row == 0)[0]
                 if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
-                    nogui.out_reset_partner_matrix_error()
                     self.partner_matrix = np.zeros((self.p, self.p))
+                    ret = 2
                     break
                 choice = np.random.choice(zero_entries_indices)
                 # get partner for pl
@@ -199,42 +198,42 @@ class Turnier:
 
         # MATCHMAKING
         if self.matchmaking:
-            self.temp_mmr = np.mean(teams[:, :].mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
+            self.temp_mmr = np.mean(teams.mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
             self.temp_mmr_sorted_indices = np.argsort(self.temp_mmr)[::-1]
-            team_indices_sorted = teams[self.temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
+            teams_sorted = teams[self.temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
         else:
-            team_indices_sorted = teams
-        self.temp_players_sorted = self.players[team_indices_sorted.index]
-        self.games.append(team_indices_sorted.index)
+            teams_sorted = teams
+        self.temp_players_sorted = self.players[teams_sorted.index]
+        self.games.append(teams_sorted.index)
 
         self.state = 1
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
-        self.game_announce_end()
+        return ret
 
-    def game_announce_end(self):
-        if self.display_mmr and self.matchmaking:
-            sorted_mmr = self.temp_mmr[self.temp_mmr_sorted_indices]
-            nogui.out_game_announce_teams(self.temp_players_sorted, sorted_mmr)
-        else:
-            nogui.out_game_announce_teams(self.temp_players_sorted)
+    # def game_announce_end(self, message_prefix=""):
+    #     if self.display_mmr and self.matchmaking:
+    #         sorted_mmr = self.temp_mmr[self.temp_mmr_sorted_indices]
+    #         nogui.out_game_announce_teams(self.temp_players_sorted, sorted_mmr)
+    #     else:
+    #         nogui.out_game_announce_teams(self.temp_players_sorted)
 
         # EXPECTING RESULTS
-        self.res()
-        if self.i == self.g:
-            if self.rizemode == 0:
-                self.stats(rize=True, final=True)
-            else:
-                self.stats(rize=False, final=True)
+        # self.res()
+        # if self.i == self.g:
+        #     if self.rizemode == 0:
+        #         self.stats(rize=True, final=True)
+        #     else:
+        #         self.stats(rize=False, final=True)
 
-    def res(self, game_number=-1):
-        self.players_copy = np.copy(self.players)
+    def res(self, res, game_number=-1):
+        if self.i < 1:
+            return -1
         if game_number == -1:
             game_number = self.i-1
         team_indices_sorted = self.games[game_number]
-        players_sorted = self.players[team_indices_sorted]
-        self.results[game_number] = nogui.in_results(self.c, players_sorted)
+        self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
                 for set_result in court_results:   # si = set index
                     score1 = set_result[0]
@@ -269,16 +268,14 @@ class Turnier:
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
-    def stats(self, rize=True, final=False):
-        nogui.out_stats(self.players, rize, final)
+        return 0
 
-    def cor_res(self):
-        self.players = np.copy(self.players_copy)
-        self.res()
+    # def stats(self, rize=True, final=False):
+    #     nogui.out_stats(self.players, rize, final)
 
-    def continue_after_load(self):
-        if self.state == 1:
-            self.game_announce_end()
+    # def continue_after_load(self):
+    #     if self.state == 1:
+    #         self.game_announce_end()
 
     def __getstate__(self):
         return dict((k, v) for (k, v) in self.__dict__.iteritems() if "gui" not in k)

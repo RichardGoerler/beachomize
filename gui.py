@@ -5,6 +5,8 @@ import tkMessageBox
 import dialog
 import turnier2 as turnier
 
+FILENAME = "players.txt"
+
 class WelcomeWindow(dialog.Dialog):
     def body(self, master):
         tk.Label(master, text="Beach with Friends - Turniermanager").grid(row=0)
@@ -29,13 +31,16 @@ class WelcomeWindow(dialog.Dialog):
             return 0
 
     def apply(self):
-        self.gui.tur.continue_after_load()
+        if self.gui.tur.state == 1:
+            pass
+        pass
 
     def new(self):
         self.withdraw()
         self.update_idletasks()
 
-        self.gui.tur = turnier.Turnier(self.gui)
+        names, mmr = self.gui.in_players()
+        self.gui.tur = turnier.Turnier(names, mmr)
 
         self.cancel()
 
@@ -108,4 +113,17 @@ class GUI:
             self.selector = GameNumberWindow(self.root, self,goodlist, waitlist, playlist)
         return self.game_count.get()
 
-GUI()
+    def in_players(self):
+        filename = FILENAME
+        with open(filename) as f:
+            filecontent = f.readlines()
+        names = []
+        init_mmr = []
+        for st in filecontent:
+            spl = st.split()
+            names.append(spl[0])
+            init_mmr.append(int(spl[1]))
+        return names, init_mmr
+
+if __name__ == '__main__':
+    GUI()
