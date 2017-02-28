@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import Tkinter as tk
-import tkMessageBox
+try:
+    import Tkinter as tk
+except:
+    import tkinter as tk
+try:
+    import tkMessageBox
+except:
+    import tkinter.messagebox as tkMessageBox
 from PIL import Image, ImageTk
 import time
 import dialog
@@ -18,7 +24,7 @@ class WelcomeWindow(dialog.Dialog):
         tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
 
     def body(self, master):
-        tk.Label(master, text="Beach with Friends - Turniermanager", bg="#EDEEF3").pack()
+        tk.Label(master, text="Beachomize - Turniermanager", bg="#EDEEF3").pack()
         return None
 
     def buttonbox(self):
@@ -68,7 +74,7 @@ class GameNumberWindow(dialog.Dialog):
         tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
 
     def body(self, master):
-        tk.Label(master, text="Anzahl zu spielender Spiele wählen.").pack()
+        tk.Label(master, text="Anzahl zu spielender Spiele wählen.", bg="#EDEEF3").pack()
         gridframe = tk.Frame(master, bg="#EDEEF3")
         buttonlist = []
         tk.Label(gridframe, text="Normal:", bg="#EDEEF3").grid(row=0)
@@ -99,16 +105,19 @@ class GameNumberWindow(dialog.Dialog):
 class GUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.iconbitmap("favicon.ico")
+        try:
+            self.root.iconbitmap("favicon.ico")
+        except:
+            pass
         self.root.title("Beach with Friends")
         self.root.configure(bg="#EDEEF3")
         self.screen_resolution = [self.root.winfo_screenwidth(), self.root.winfo_screenheight()]
         self.tur = None
 
-        self.root.withdraw()
+        # self.root.withdraw()
         self.welcome = WelcomeWindow(self.root, self)
         if self.tur is not None:
-            self.root.deiconify()
+            # self.root.deiconify()
             self.tur.set_game_count(self.in_game_count())
 
             #create main window elements here
@@ -173,10 +182,10 @@ class GUI:
 
             #properties
             propbox = tk.Frame(self.root, bg="#EDEEF3")
-            tk.Label(propbox, text=" Anzahl Spieler: {}  |".format(self.tur.p)).grid(row=0, column=0)
-            tk.Label(propbox, text=" Anzahl Courts: {}  |".format(self.tur.c)).grid(row=0, column=1)
-            tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w)).grid(row=0, column=2)
-            tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode)).grid(row=0, column=3)
+            tk.Label(propbox, text=" Anzahl Spieler: {}  |".format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
+            tk.Label(propbox, text=" Anzahl Courts: {}  |".format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
+            tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
+            tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=3)
             propbox.grid(row=5, columnspan=3)
 
             self.root.mainloop()
@@ -199,9 +208,9 @@ class GUI:
         self.game_count = tk.IntVar()
         self.game_count.set(0)
         while self.game_count.get() == 0:
-            self.root.withdraw()
+            # self.root.withdraw()
             self.selector = GameNumberWindow(self.root, self, self.tur.goodlist, self.tur.waitlist, self.tur.playlist)
-            self.root.deiconify()
+            # self.root.deiconify()
         return self.game_count.get()
 
     def in_players(self):

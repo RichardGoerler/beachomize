@@ -1,14 +1,18 @@
-import Tkinter as tk
-from PIL import Image, ImageTk
-import os
+try:
+    import Tkinter as tk
+except:
+    import tkinter as tk
 
 class Dialog(tk.Toplevel):
 
-    def __init__(self, parent, gui, title="Beach with Friends"):
+    def __init__(self, parent, gui, title="beachomize"):
 
         tk.Toplevel.__init__(self, parent)
         self.configure(bg="#EDEEF3")
-        self.iconbitmap("favicon.ico")
+        try:
+            self.iconbitmap("favicon.ico")
+        except:
+            pass
         self.gui = gui
         self.transient(parent)
 
