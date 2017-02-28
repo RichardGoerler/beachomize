@@ -93,6 +93,7 @@ class Turnier:
         self.maxwait = 0
 
     def set_game_count(self, g):
+        self.g = g
         if self.g in self.waitlist:
             self.rizemode = -1
         elif self.g in self.playlist:
