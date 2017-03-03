@@ -166,12 +166,21 @@ class GUI:
             #game announcement
             tk.Label(self.root, text="Aktuelles Spiel:", font=('times', 12, 'bold'), bg="#EDEEF3").grid(row=2,column=2)
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
+            self.game_labels = []
+            for ci in range(self.tur.c):
+                if ci == 0:
+                    tk.Label(self.game_table, text="Center Court:", font="-size 9 -weight bold", bg="#EDEEF3").pack()
+                else:
+                    tk.Label(self.game_table, text="Feld {}:".format(ci), font="-size 9 -weight bold", bg="#EDEEF3").pack()
+                self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
+                self.game_labels[ci].pack()
             self.game_table.grid(row=3,column=2)
 
             #buttons
             buttonbox = tk.Frame(self.root, bg="#EDEEF3")
             self.wait_but = tk.Button(buttonbox, text="Pausenwunsch", command=self.wait_request, bg="#EDEEF3")
             self.wait_but.pack(side=tk.LEFT, padx=5, pady=5)
+            self.wait_request = None
             self.game_but = tk.Button(buttonbox, text="Nächstes Spiel", default=tk.ACTIVE, command=self.new_game, bg="#EDEEF3")
             self.game_but.pack(side=tk.LEFT, padx=5, pady=5)
             self.result_but = tk.Button(buttonbox, text="Ergebnis eintragen", command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
@@ -229,7 +238,17 @@ class GUI:
         pass
 
     def new_game(self):
-        pass
+        self.tur.game(self.wait_request)
+        team_indices = self.tur.games[-1]
+        names_sorted = self.tur.players.name[team_indices]
+        for i in range(len(team_indices)/2):
+            self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
+        self.game_but["state"] = tk.DISABLED
+        self.result_but["state"] = tk.ACTIVE
+        for ii in range(self.tur.i-1):
+            self.schedule_labels[ii]["fg"] = "red"
+        self.schedule_labels[self.tur.i-1]["fg"] = "dark green"
+        self.schedule_labels[self.tur.i - 1]["font"] = "-size 9 -weight bold"
 
     def enter_results(self):
         pass

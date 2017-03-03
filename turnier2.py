@@ -204,7 +204,6 @@ class Turnier:
             teams_sorted = teams[self.temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
         else:
             teams_sorted = teams
-        self.temp_players_sorted = self.players[teams_sorted.index]
         self.games.append(teams_sorted.index)
 
         self.state = 1
