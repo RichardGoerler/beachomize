@@ -10,6 +10,7 @@ except:
     import tkinter.messagebox as tkMessageBox
 from PIL import Image, ImageTk
 import time
+import numpy as np
 import dialog
 import turnier2 as turnier
 
@@ -55,7 +56,7 @@ class WelcomeWindow(dialog.Dialog):
         self.update_idletasks()
 
         names, mmr = self.gui.in_players()
-        self.gui.tur = turnier.Turnier(names, mmr)
+        self.gui.tur = turnier.Turnier(names, mmr, display_mmr=True)
 
         self.cancel()
 
@@ -167,6 +168,8 @@ class GUI:
             tk.Label(self.root, text="Aktuelles Spiel:", font=('times', 12, 'bold'), bg="#EDEEF3").grid(row=2,column=2)
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
             self.game_labels = []
+            if self.tur.display_mmr:
+                self.mmr_labels = []
             for ci in range(self.tur.c):
                 if ci == 0:
                     tk.Label(self.game_table, text="Center Court:", font="-size 9 -weight bold", bg="#EDEEF3").pack()
@@ -174,6 +177,9 @@ class GUI:
                     tk.Label(self.game_table, text="Feld {}:".format(ci), font="-size 9 -weight bold", bg="#EDEEF3").pack()
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
                 self.game_labels[ci].pack()
+                if self.tur.display_mmr:
+                    self.mmr_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
+                    self.mmr_labels[ci].pack()
             self.game_table.grid(row=3,column=2)
 
             #buttons
@@ -241,8 +247,12 @@ class GUI:
         self.tur.game(self.wait_request)
         team_indices = self.tur.games[-1]
         names_sorted = self.tur.players.name[team_indices]
+        if self.tur.display_mmr:
+            mmr_sorted = self.tur.players.mmr[team_indices]
+            mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
         for i in range(len(team_indices)/2):
             self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
+            self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ") - " + str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ")"
         self.game_but["state"] = tk.DISABLED
         self.result_but["state"] = tk.ACTIVE
         for ii in range(self.tur.i-1):
