@@ -16,6 +16,109 @@ import turnier2 as turnier
 
 FILENAME = "players.txt"
 
+class ResultsWindow(dialog.Dialog):
+    def header(self, master):
+        imobj = Image.open("ims/logo-bg.png")
+        dim = self.gui.dims_by_scale(0.1)[0]
+        imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
+        self.gui.logo = ImageTk.PhotoImage(imobj)
+        tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
+
+    def body(self, master):
+        self.master = master
+        if self.gui.sets > 3:
+            self.gui.sets = 3
+        elif self.gui.sets < 1:
+            self.gui.sets = 1
+        self.game_labels = []
+        team_indices = self.gui.tur.games[-1]
+        names_sorted = self.gui.tur.players.name[team_indices]
+        self.spinboxes = []
+        self.placeholders = []
+        for ci in range(self.gui.tur.c):
+            if ci == 0:
+                tk.Label(master, text="Center Court:", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=0)
+            else:
+                tk.Label(master, text="Feld {}:".format(ci), font="-size 9 -weight bold", bg="#EDEEF3").grid(row=2*ci, column=0)
+            self.game_labels.append(tk.Label(master, text=names_sorted[2 * ci][0] + "/" + names_sorted[2 * ci][1] + " - " + names_sorted[2 * ci + 1][0] + "/" + names_sorted[2 * ci + 1][1], bg="#EDEEF3"))
+            self.game_labels[ci].grid(row=2*ci+1, column=0, padx=10)
+            self.spinboxes.append([])
+            self.placeholders.append([])
+            for si in range(3):
+                self.spinboxes[-1].append([])
+                self.placeholders[-1].append([])
+                self.spinboxes[-1][-1].append(tk.Spinbox(master, width=5, from_=0, to=30, bg="#EDEEF3"))
+                self.spinboxes[-1][-1][-1].grid(row=2*ci+1,column=4*si+1)
+                self.placeholders[-1][-1].append(tk.Label(master,text="-", bg="#EDEEF3"))
+                self.placeholders[-1][-1][-1].grid(row=2*ci+1, column=4*si+2)
+                self.spinboxes[-1][-1].append(tk.Spinbox(master, width=5, from_=0, to=30, bg="#EDEEF3"))
+                self.spinboxes[-1][-1][-1].grid(row=2 * ci+1, column=4*si+3)
+                self.placeholders[-1][-1].append(tk.Label(master, text="    ", bg="#EDEEF3"))
+                self.placeholders[-1][-1][-1].grid(row=2 * ci + 1, column=4 * si + 4)
+
+        return self.spinboxes[0][0][0]
+
+    def buttonbox(self):
+        box = tk.Frame(self)
+
+        w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        stateval = tk.NORMAL if self.gui.sets > 1 else tk.DISABLED
+        self.reduce_but = tk.Button(box, text="Satz -", width=5, command=self.reduce_set_number, state=stateval, bg="#EDEEF3")
+        self.reduce_but.pack(side=tk.LEFT, padx=5, pady=5)
+        stateval = tk.NORMAL if self.gui.sets < 3 else tk.DISABLED
+        self.increase_but = tk.Button(box, text="Satz +", width=5, command=self.increase_set_number, state=stateval, bg="#EDEEF3")
+        self.increase_but.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+        goal_sets = self.gui.sets
+        self.gui.sets = 3
+        while self.gui.sets > goal_sets:
+            self.reduce_set_number()
+
+    def reduce_set_number(self):
+        self.gui.sets -= 1
+        for ci in range(self.gui.tur.c):
+            self.spinboxes[ci][self.gui.sets][1].delete(0, "end")
+            self.spinboxes[ci][self.gui.sets][1].insert(0, 0)
+            self.spinboxes[ci][self.gui.sets][1].grid_forget()
+            self.placeholders[ci][self.gui.sets][1].grid_forget()
+            self.spinboxes[ci][self.gui.sets][0].delete(0, "end")
+            self.spinboxes[ci][self.gui.sets][0].insert(0, 0)
+            self.spinboxes[ci][self.gui.sets][0].grid_forget()
+            self.placeholders[ci][self.gui.sets][0].grid_forget()
+        if self.increase_but["state"] == tk.DISABLED:
+            self.increase_but["state"] = tk.NORMAL
+        if self.gui.sets == 1:
+            self.reduce_but["state"] = tk.DISABLED
+
+    def increase_set_number(self):
+        for ci in range(self.gui.tur.c):
+            self.spinboxes[ci][self.gui.sets][0].grid(row=2 * ci + 1, column=4 * self.gui.sets + 1)
+            self.placeholders[ci][self.gui.sets][0].grid(row=2 * ci + 1, column=4 * self.gui.sets + 2)
+            self.spinboxes[ci][self.gui.sets][1].grid(row=2 * ci + 1, column=4 * self.gui.sets + 3)
+            self.placeholders[ci][self.gui.sets][1].grid(row=2 * ci + 1, column=4 * self.gui.sets + 4)
+        self.gui.sets += 1
+        if self.reduce_but["state"] == tk.DISABLED:
+            self.reduce_but["state"] = tk.NORMAL
+        if self.gui.sets == 3:
+            self.increase_but["state"] = tk.DISABLED
+
+    def validate(self):
+        try:
+            self.gui.tur = turnier.load(self.gui)
+            return 1
+        except IOError:
+            tkMessageBox.showwarning("IOError", "Kein gespeichertes Turnier vorhanden.")
+            return 0
+
+    def apply(self):
+        pass
+
 class WelcomeWindow(dialog.Dialog):
     def header(self, master):
         imobj = Image.open("ims/logo-bg.png")
@@ -25,7 +128,7 @@ class WelcomeWindow(dialog.Dialog):
         tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
 
     def body(self, master):
-        tk.Label(master, text="Beachomize - Turniermanager", bg="#EDEEF3").pack()
+        tk.Label(master, text="beachomize - Turniermanager", bg="#EDEEF3").pack()
         return None
 
     def buttonbox(self):
@@ -61,7 +164,7 @@ class WelcomeWindow(dialog.Dialog):
         self.cancel()
 
 class GameNumberWindow(dialog.Dialog):
-    def __init__(self, parent, gui, goodlist, waitlist, playlist, title="Beach with Friends"):
+    def __init__(self, parent, gui, goodlist, waitlist, playlist, title="beachomize - Spielanzahl"):
         self.goodlist = goodlist
         self.waitlist = waitlist
         self.playlist = playlist
@@ -110,16 +213,19 @@ class GUI:
             self.root.iconbitmap("favicon.ico")
         except:
             pass
-        self.root.title("Beach with Friends")
+        self.root.title("beachomize by Rize")
         self.root.configure(bg="#EDEEF3")
         self.screen_resolution = [self.root.winfo_screenwidth(), self.root.winfo_screenheight()]
         self.tur = None
 
         # self.root.withdraw()
         self.welcome = WelcomeWindow(self.root, self)
-        if self.tur is not None:
+        if self.tur is None:
+            self.root.destroy()
+        else:
             # self.root.deiconify()
-            self.tur.set_game_count(self.in_game_count())
+            if self.tur.state == -1:
+                self.tur.set_game_count(self.in_game_count())
 
             #create main window elements here
             #banner
@@ -149,6 +255,7 @@ class GUI:
             self.pl_labels = []
             for id, nam in enumerate(self.tur.players.name):
                 self.pl_labels.append(tk.Label(self.pl_table, text=nam, bg="#EDEEF3"))
+                self.pl_labels[id].bind("<Button-1>", lambda event, pid = id: self.toggle_wait(pid))
                 self.pl_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = 5)
             self.pl_table.grid(row=3,column=0)
 
@@ -184,13 +291,12 @@ class GUI:
 
             #buttons
             buttonbox = tk.Frame(self.root, bg="#EDEEF3")
-            self.wait_but = tk.Button(buttonbox, text="Pausenwunsch", command=self.wait_request, bg="#EDEEF3")
-            self.wait_but.pack(side=tk.LEFT, padx=5, pady=5)
-            self.wait_request = None
+            self.wait_list = [False]*self.tur.p
             self.game_but = tk.Button(buttonbox, text="Nächstes Spiel", default=tk.ACTIVE, command=self.new_game, bg="#EDEEF3")
             self.game_but.pack(side=tk.LEFT, padx=5, pady=5)
             self.result_but = tk.Button(buttonbox, text="Ergebnis eintragen", command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
             self.result_but.pack(side=tk.LEFT, padx=5, pady=5)
+            self.sets = 2
             self.stats_but = tk.Button(buttonbox, text="Punktestände", command=self.show_stats, bg="#EDEEF3")
             self.stats_but.pack(side=tk.LEFT, padx=5, pady=5)
             buttonbox.grid(row=4, columnspan=3, padx=5, pady=5)
@@ -202,6 +308,9 @@ class GUI:
             tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
             tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=3)
             propbox.grid(row=5, columnspan=3)
+
+            if self.tur.state == 1:
+                self.new_game(after_load=True)
 
             self.root.mainloop()
 
@@ -240,28 +349,51 @@ class GUI:
             init_mmr.append(int(spl[1]))
         return names, init_mmr
 
-    def wait_request(self):
-        pass
+    def toggle_wait(self, pl_id):
+        if self.game_but["state"] == tk.DISABLED:
+            return
+        if self.pl_labels[pl_id]["fg"] == "red":
+            self.pl_labels[pl_id]["fg"] = "black"
+            self.wait_list[pl_id] = False
+        else:
+            self.pl_labels[pl_id]["fg"] = "red"
+            self.wait_list[pl_id] = True
+        wait_req = self.make_wait_request()
+        changed, wait_request = self.tur.canwait(wait_req, return_changed=True)
+        if changed:
+            for pi in range(self.tur.p):
+                if pi in wait_request:
+                    self.pl_labels[pi]["fg"] = "red"
+                    self.wait_list[pi] = True
+                else:
+                    self.pl_labels[pi]["fg"] = "black"
+                    self.wait_list[pi] = False
 
-    def new_game(self):
-        self.tur.game(self.wait_request)
+    def make_wait_request(self):
+        return [pi for pi in range(self.tur.p) if self.wait_list[pi]]
+
+    def new_game(self, after_load=False):
+        if not after_load:
+            self.tur.game(self.make_wait_request())
         team_indices = self.tur.games[-1]
         names_sorted = self.tur.players.name[team_indices]
         if self.tur.display_mmr:
             mmr_sorted = self.tur.players.mmr[team_indices]
             mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
         for i in range(len(team_indices)/2):
+            self.pl_labels[team_indices[2*i][0]]["fg"] = self.pl_labels[team_indices[2 * i][1]]["fg"] = "dark green"
+            self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
             self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
             self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ") - " + str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ")"
         self.game_but["state"] = tk.DISABLED
-        self.result_but["state"] = tk.ACTIVE
+        self.result_but["state"] = tk.NORMAL
         for ii in range(self.tur.i-1):
             self.schedule_labels[ii]["fg"] = "red"
         self.schedule_labels[self.tur.i-1]["fg"] = "dark green"
         self.schedule_labels[self.tur.i - 1]["font"] = "-size 9 -weight bold"
 
     def enter_results(self):
-        pass
+        self.res_window = ResultsWindow(self.root, self, title="beachomize - Ergebis Spiel " + str(self.tur.i))
 
     def show_stats(self):
         pass

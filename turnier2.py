@@ -81,7 +81,7 @@ class Turnier:
             self.w = self.p-self.a
         self.rizemode = 0
         self.i = 0  # number of games played so far
-        self.state = 0  # 0: after init or after entering results 2: expect results
+        self.state = -1  # -1: just initialized 0: if anything was done 1: expect results
         self.games = []
         self.games_names = []
         self.results = []
@@ -105,34 +105,34 @@ class Turnier:
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
+    def canwait(self, waitlist, return_changed = False):
+        changed = False
+        if waitlist is None:
+            return np.array([])
+        waiting_this_turn = []
+        wr = len(waitlist)
+        if wr > self.w:
+            wr = self.w
+            changed = True
+        for i in range(wr):
+            if self.players[waitlist[i]].wait < self.maxwait:
+                waiting_this_turn.append(waitlist[i])
+            else:
+                changed = True
+        ret = np.array(waiting_this_turn).astype(int)
+        if return_changed:
+            return changed, ret
+        return ret
 
     def game(self, wait_request=None):
         if self.g < 1:
             return -1
         ret = 0    #0 no matrix reset, 1 regular matrix reset, 2 error matrix reset
-        # WAITING
-        if wait_request is None:
-            waitreq = []
-        else:
-            waitreq = list(wait_request)
-        if (not [] == waitreq) and (1 == len(waitreq[0])):   # if it is just a string and not a list of strings
-            waitreq = [waitreq]
-        reqlist = []
-        for reqname in waitreq:
-            for ip, plname in enumerate(self.players.name):
-                if plname.lower().startswith(reqname.lower()):
-                    reqlist.append(ip)
-                    break
-        waiting_this_turn = np.array(reqlist).astype(int)
+        #WAITING
+        waiting_this_turn = self.canwait(wait_request)
         wr = len(waiting_this_turn)
-        if wr > self.w:
-            waiting_this_turn = waiting_this_turn[:self.w]
         noreq = np.setdiff1d(self.players.index, waiting_this_turn)
         wdif = self.w - wr
-        for ip in waiting_this_turn:
-            if self.players[ip].wait == self.maxwait:
-                raise Exception("Player {} cannot wait anymore".format(self.players[ip].name))
-        nogui.out_game_announce_time(self.timeframe, self.orgatime, self.schedule, self.g, self.i)
         self.i += 1  # increment game counter
         min_wait = np.min(self.players.wait[noreq])
         min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], noreq)
@@ -199,9 +199,9 @@ class Turnier:
 
         # MATCHMAKING
         if self.matchmaking:
-            self.temp_mmr = np.mean(teams.mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
-            self.temp_mmr_sorted_indices = np.argsort(self.temp_mmr)[::-1]
-            teams_sorted = teams[self.temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
+            temp_mmr = np.mean(teams.mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
+            temp_mmr_sorted_indices = np.argsort(temp_mmr)[::-1]
+            teams_sorted = teams[temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
         else:
             teams_sorted = teams
         self.games.append(teams_sorted.index)
