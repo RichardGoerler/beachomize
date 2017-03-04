@@ -3,6 +3,8 @@ try:
 except:
     import tkinter as tk
 
+from PIL import Image, ImageTk
+
 class Dialog(tk.Toplevel):
 
     def __init__(self, parent, gui, title="beachomize"):
@@ -57,8 +59,12 @@ class Dialog(tk.Toplevel):
         pass
 
     def header(self, master):
-        # create dialog body.  return widget that should have
-        # initial focus.  this method should be overridden
+        # create dialog header.  this method should be overridden
+        imobj = Image.open("ims/logo-bg.png")
+        dim = self.gui.dims_by_scale(0.1)[0]
+        imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
+        self.gui.logo = ImageTk.PhotoImage(imobj)
+        tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
 
         pass
 

@@ -228,47 +228,48 @@ class Turnier:
         #         self.stats(rize=False, final=True)
 
     def res(self, res, game_number=-1):
-        if self.i < 1:
-            return -1
+        self.players_copy = self.players.copy()
         if game_number == -1:
             game_number = self.i-1
         team_indices_sorted = self.games[game_number]
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
-                for set_result in court_results:   # si = set index
-                    score1 = set_result[0]
-                    score2 = set_result[1]
-                    scorediff = score1-score2
+            for set_result in court_results:   # si = set index
+                score1 = set_result[0]
+                score2 = set_result[1]
+                scorediff = score1-score2
 
-                    # generate index 0: lost, 1: draw, 2: won. index default score array with that index
-                    self.players[team_indices_sorted[2 * ci, 0]].score += [0, 0, 1][np.sign(scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci, 1]].score += [0, 0, 1][np.sign(scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].score += [0, 0, 1][np.sign(-scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].score += [0, 0, 1][np.sign(-scorediff) + 1]
+                # generate index 0: lost, 1: draw, 2: won. index default score array with that index
+                self.players[team_indices_sorted[2 * ci, 0]].score += [0, 0, 1][np.sign(scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci, 1]].score += [0, 0, 1][np.sign(scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci + 1, 0]].score += [0, 0, 1][np.sign(-scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci + 1, 1]].score += [0, 0, 1][np.sign(-scorediff) + 1]
 
-                    # difference is from the POV of team 1, so positive if team 1 won
-                    self.players[team_indices_sorted[2 * ci, 0]].diff += scorediff
-                    self.players[team_indices_sorted[2 * ci, 1]].diff += scorediff
-                    self.players[team_indices_sorted[2 * ci+1, 0]].diff -= scorediff
-                    self.players[team_indices_sorted[2 * ci+1, 1]].diff -= scorediff
+                # difference is from the POV of team 1, so positive if team 1 won
+                self.players[team_indices_sorted[2 * ci, 0]].diff += scorediff
+                self.players[team_indices_sorted[2 * ci, 1]].diff += scorediff
+                self.players[team_indices_sorted[2 * ci+1, 0]].diff -= scorediff
+                self.players[team_indices_sorted[2 * ci+1, 1]].diff -= scorediff
 
-                    self.players[team_indices_sorted[2 * ci, 0]].points += score1
-                    self.players[team_indices_sorted[2 * ci, 1]].points += score1
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].points += score2
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].points += score2
+                self.players[team_indices_sorted[2 * ci, 0]].points += score1
+                self.players[team_indices_sorted[2 * ci, 1]].points += score1
+                self.players[team_indices_sorted[2 * ci + 1, 0]].points += score2
+                self.players[team_indices_sorted[2 * ci + 1, 1]].points += score2
 
-                    # mmr is changed according to score difference at the moment, may be changed later
-                    # this means, when initialized with 0, mmr = diff at the end of the day
-                    self.players[team_indices_sorted[2 * ci, 0]].mmr += scorediff
-                    self.players[team_indices_sorted[2 * ci, 1]].mmr += scorediff
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff
+                # mmr is changed according to score difference at the moment, may be changed later
+                # this means, when initialized with 0, mmr = diff at the end of the day
+                self.players[team_indices_sorted[2 * ci, 0]].mmr += scorediff
+                self.players[team_indices_sorted[2 * ci, 1]].mmr += scorediff
+                self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff
+                self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff
 
         self.state = 0
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
-        return 0
+    def cor_res(self, res):
+        self.players = self.players_copy.copy()
+        self.res(res)
 
     # def stats(self, rize=True, final=False):
     #     nogui.out_stats(self.players, rize, final)
