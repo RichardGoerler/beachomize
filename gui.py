@@ -96,7 +96,7 @@ class ResultsWindow(dialog.Dialog):
         return self.spinboxes[0][0][0]
 
     def buttonbox(self):
-        box = tk.Frame(self)
+        box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
         w.pack(side=tk.LEFT, padx=5, pady=5)
