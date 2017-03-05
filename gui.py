@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+#TODO: configure all fonts that will be used based on default fonts and refactor all font changes in code!
+#TODO: Headers in all windows should be larger
+
 try:
     import Tkinter as tk
 except:
@@ -8,13 +11,12 @@ try:
     import tkMessageBox
 except:
     import tkinter.messagebox as tkMessageBox
+import tkFont
 from PIL import Image, ImageTk
 import time
 import numpy as np
 import dialog
 import turnier2 as turnier
-
-import pdb
 
 FILENAME = "players.txt"
 
@@ -107,7 +109,7 @@ class ResultsWindow(dialog.Dialog):
         self.increase_but = tk.Button(box, text="Satz +", width=5, command=self.increase_set_number, state=stateval, bg="#EDEEF3")
         self.increase_but.pack(side=tk.LEFT, padx=5, pady=5)
 
-        # self.bind("<Return>", self.ok)
+        #self.bind("<Return>", self.ok_bind)
         #self.bind("<Escape>", self.cancel)
 
         box.pack()
@@ -192,6 +194,17 @@ class WelcomeWindow(dialog.Dialog):
         self.cvar.set(3)
         tk.Label(box, text="Anzahl Felder:", bg="#EDEEF3").grid(row=1, column=0)
         tk.OptionMenu(box, self.cvar, 1, 2, 3, 4, 5).grid(row=2, column=0)
+        tk.Label(box, text="Starzeit und Dauer:", bg="#EDEEF3").grid(row=3, column=0, pady=5)
+        self.time_var = tk.StringVar()
+        self.time_var.set("2100")
+        self.time_entry = tk.Entry(box, textvariable=self.time_var, width=5)
+        self.time_entry.grid(row=4, column=0)
+        self.duration_var = tk.StringVar()
+        self.duration_var.set("300")
+        self.duration_entry = tk.Entry(box, textvariable=self.duration_var, width=5)
+        self.duration_entry.grid(row=5, column=0, pady=5)
+
+        self.bind('<Return>', self.new)
 
         box.pack()
 
@@ -208,12 +221,41 @@ class WelcomeWindow(dialog.Dialog):
             pass
         pass
 
-    def new(self):
+    def new(self, event=None):   #parameter event for call by event binding from enter
+        time_entry = self.time_var.get()
+        time_split = [int(i3) for j3 in [s3.split() for s3 in [i2 for j2 in [time_entry.split(':')] for i2 in j2]] for i3 in j3 if i3.isdigit()]
+        if len(time_split) > 2 or len(time_split) == 0:
+            tkMessageBox.showwarning("IOError", "Ungültige Startzeit")
+            self.initial_focus = self.time_entry
+            self.time_entry.select_range(0, tk.END)
+            return
+        elif len(time_split) == 2:
+            starttime = time_split[0]*100 + time_split[1]
+        elif len(time_split) == 1:
+            starttime = time_split[0]
+        duration_entry = self.duration_var.get().replace(',', '.')
+        try:
+            duration_float = float(duration_entry)
+            if duration_float > 10:  #arbitrary
+                raise Exception
+            duration = 100*int(duration_float) + 60*(duration_float-int(duration_float))
+        except:
+            duration_split = [int(i3) for j3 in [s3.split() for s3 in [i2 for j2 in [duration_entry.split(':')] for i2 in j2]] for i3 in j3 if i3.isdigit()]
+            if len(duration_split) > 2 or len(duration_split) == 0:
+                tkMessageBox.showwarning("IOError", "Ungültige Turnierdauer")
+                self.initial_focus = self.duration_entry
+                self.duration_entry.select_range(0,tk.END)
+                return
+            elif len(duration_split) == 2:
+                duration = duration_split[0] * 100 + duration_split[1]
+            elif len(duration_split) == 1:
+                duration = duration_split[0]
+
         self.withdraw()
         self.update_idletasks()
 
         names, mmr = self.gui.in_players()
-        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get())
+        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), start_time=starttime, duration=duration)
 
         self.cancel()
 
@@ -263,10 +305,15 @@ class GameNumberWindow(dialog.Dialog):
 class GUI:
     def __init__(self):
         self.root = tk.Tk()
+        default_font = tkFont.nametofont("TkDefaultFont")
+        default_font.configure(size=12)
+        text_font = tkFont.nametofont("TkTextFont")
+        text_font.configure(size=12)
         try:
             self.root.iconbitmap("favicon.ico")
         except:
             pass
+
         self.root.title("beachomize by Rize")
         self.root.configure(bg="#EDEEF3")
         self.screen_resolution = [self.root.winfo_screenwidth(), self.root.winfo_screenheight()]

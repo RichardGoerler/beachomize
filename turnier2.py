@@ -24,9 +24,9 @@ def lcm1(f):
 class Turnier:
 
     def _make_schedule(self):
-        starthour = (self.start_time / 100)
-        startminute = self.start_time % 100
-        totaltime = 60*(24-starthour)-startminute
+        durhour = int(self.duration / 100)
+        durminute = self.duration % 100
+        totaltime = 60*durhour + durminute
         self.timeframe = int(totaltime / self.g)
         self.schedule = [self.start_time]
         for i in range(1, self.g):
@@ -56,9 +56,10 @@ class Turnier:
             f %= self.p
             i += 1
 
-    def __init__(self, names, mmr, courts=3, start_time=2100, matchmaking=True, display_mmr=False, orgatime=3):
+    def __init__(self, names, mmr, courts=3, start_time=2100, duration=300, matchmaking=True, display_mmr=False, orgatime=3):
         self.init_mmr = mmr
         self.start_time = start_time
+        self.duration = duration
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float),
                        ('wait', int)])
