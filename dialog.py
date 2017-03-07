@@ -61,7 +61,7 @@ class Dialog(tk.Toplevel):
     def header(self, master):
         # create dialog header.  this method should be overridden
         imobj = Image.open("ims/logo-bg.png")
-        dim = self.gui.dims_by_scale(0.1)[0]
+        dim = self.gui.dims_by_scale(0.15)[0]
         imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
         self.gui.logo = ImageTk.PhotoImage(imobj)
         tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()

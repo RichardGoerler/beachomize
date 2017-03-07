@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#TODO: configure all fonts that will be used based on default fonts and refactor all font changes in code!
-#TODO: Headers in all windows should be larger
-
 try:
     import Tkinter as tk
 except:
@@ -24,12 +21,12 @@ class StatsWindow(dialog.Dialog):
     def body(self, master):
         sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
-        tk.Label(master, text="Name", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=0)
-        tk.Label(master, text="Punkte", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=1)
-        tk.Label(master, text="Balldifferenz", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=2)
-        tk.Label(master, text="Bälle", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=3)
+        tk.Label(master, text="Name", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0)
+        tk.Label(master, text="Punkte", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1)
+        tk.Label(master, text="Balldifferenz", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2)
+        tk.Label(master, text="Bälle", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3)
         if self.gui.tur.display_mmr:
-            tk.Label(master, text="MMR", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=4)
+            tk.Label(master, text="MMR", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4)
         for ip, pl in enumerate(stats_sorted):
             tk.Label(master, text=pl.name, bg="#EDEEF3").grid(row=ip+1, column=0)
             tk.Label(master, text=pl.score, bg="#EDEEF3").grid(row=ip+1, column=1)
@@ -69,9 +66,9 @@ class ResultsWindow(dialog.Dialog):
         self.placeholders = []
         for ci in range(self.gui.tur.c):
             if ci == 0:
-                tk.Label(master, text="Center Court:", font="-size 9 -weight bold", bg="#EDEEF3").grid(row=0, column=0)
+                tk.Label(master, text="Center Court:", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0)
             else:
-                tk.Label(master, text="Feld {}:".format(ci), font="-size 9 -weight bold", bg="#EDEEF3").grid(row=2*ci, column=0)
+                tk.Label(master, text="Feld {}:".format(ci), font=self.gui.bold_font, bg="#EDEEF3").grid(row=2*ci, column=0)
             self.game_labels.append(tk.Label(master, text=names_sorted[2 * ci][0] + "/" + names_sorted[2 * ci][1] + " - " + names_sorted[2 * ci + 1][0] + "/" + names_sorted[2 * ci + 1][1], bg="#EDEEF3"))
             self.game_labels[ci].grid(row=2*ci+1, column=0, padx=10)
             self.spinboxes.append([])
@@ -172,12 +169,6 @@ class ResultsWindow(dialog.Dialog):
             self.gui.tur.res(self.res_list)
 
 class WelcomeWindow(dialog.Dialog):
-    def header(self, master):
-        imobj = Image.open("ims/logo-bg.png")
-        dim = self.gui.dims_by_scale(0.1)[0]
-        imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
-        self.gui.logo = ImageTk.PhotoImage(imobj)
-        tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
 
     def body(self, master):
         tk.Label(master, text="beachomize - Turniermanager", bg="#EDEEF3").pack()
@@ -266,13 +257,6 @@ class GameNumberWindow(dialog.Dialog):
         self.playlist = playlist
         dialog.Dialog.__init__(self, parent, gui, title)
 
-    def header(self, master):
-        imobj = Image.open("ims/logo-bg.png")
-        dim = self.gui.dims_by_scale(0.1)[0]
-        imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
-        self.gui.logo = ImageTk.PhotoImage(imobj)
-        tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
-
     def body(self, master):
         tk.Label(master, text="Anzahl zu spielender Spiele wählen.", bg="#EDEEF3").pack()
         gridframe = tk.Frame(master, bg="#EDEEF3")
@@ -305,10 +289,18 @@ class GameNumberWindow(dialog.Dialog):
 class GUI:
     def __init__(self):
         self.root = tk.Tk()
-        default_font = tkFont.nametofont("TkDefaultFont")
-        default_font.configure(size=12)
-        text_font = tkFont.nametofont("TkTextFont")
-        text_font.configure(size=12)
+        self.screenwidth = self.root.winfo_screenwidth()
+        self.default_size = int(10*self.screenwidth/1080)
+        self.default_font = tkFont.nametofont("TkDefaultFont")
+        self.default_font.configure(size=self.default_size)
+        self.text_font = tkFont.nametofont("TkTextFont")
+        self.text_font.configure(size=self.default_size)
+        self.bold_font = self.default_font.copy()
+        self.bold_font.configure(weight="bold")
+        self.big_bold_font = self.bold_font.copy()
+        self.big_bold_font.configure(size=int(1.33*self.default_size))
+        self.clock_font = self.bold_font.copy()
+        self.clock_font.configure(size=int(2.22*self.default_size))
         try:
             self.root.iconbitmap("favicon.ico")
         except:
@@ -331,7 +323,7 @@ class GUI:
             #create main window elements here
             #banner
             imobj = Image.open("ims/banner2.jpg")
-            dim = self.dims_by_scale(0.3)[0]
+            dim = self.dims_by_scale(0.45)[0]
             fac = float(dim) / imobj.size[0]
             dim2 = int(imobj.size[1] * fac)
             imobj = imobj.resize((dim, dim2), Image.ANTIALIAS)
@@ -339,8 +331,8 @@ class GUI:
             tk.Label(self.root, image=self.banner, bg="#EDEEF3").grid(columnspan=3)
 
             #clock
-            clock = tk.Label(self.root, font=('times', 20, 'bold'), bg="#EDEEF3")
-            clock.grid(row=1, column=1, padx=10, pady=10)
+            clock = tk.Label(self.root, font=self.clock_font, bg="#EDEEF3")
+            clock.grid(row=1, column=1, padx=self.default_size, pady=self.default_size)
             def tick():
                 s = time.strftime('%H:%M:%S')
                 if s != clock["text"]:
@@ -351,37 +343,37 @@ class GUI:
             MAXROWS = 10
 
             #player list
-            tk.Label(self.root, text="Spielerliste:", font=('times', 12, 'bold'), bg="#EDEEF3").grid(row=2,column=0)
+            tk.Label(self.root, text="Spielerliste:", font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=0, pady=self.default_size)
             self.pl_table=tk.Frame(self.root, bg="#EDEEF3")
             self.pl_labels = []
             for id, nam in enumerate(self.tur.players.name):
                 self.pl_labels.append(tk.Label(self.pl_table, text=nam, bg="#EDEEF3"))
                 self.pl_labels[id].bind("<Button-1>", lambda event, pid = id: self.toggle_wait(pid))
-                self.pl_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = 5)
+                self.pl_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
             self.pl_table.grid(row=3,column=0)
 
             #schedule
-            tk.Label(self.root, text="Zeitplan:", font=('times', 12, 'bold'), bg="#EDEEF3").grid(row=2,column=1)
+            tk.Label(self.root, text="Zeitplan:", font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=1, pady=self.default_size)
             self.schedule_table = tk.Frame(self.root, bg="#EDEEF3")
             self.schedule_labels = []
             for id, tim in enumerate(self.tur.schedule):
                 hour = int(tim/100)
                 minute = tim-hour*100
                 self.schedule_labels.append(tk.Label(self.schedule_table, text="{:02d} - {:02d}:{:02d}".format(id+1, hour, minute), bg="#EDEEF3"))
-                self.schedule_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = 5)
+                self.schedule_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)
 
             #game announcement
-            tk.Label(self.root, text="Aktuelles Spiel:", font=('times', 12, 'bold'), bg="#EDEEF3").grid(row=2,column=2)
+            tk.Label(self.root, text="Aktuelles Spiel:", font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=2, pady=self.default_size)
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
             self.game_labels = []
             self.mmr_labels = []
             for ci in range(self.tur.c):
                 if ci == 0:
-                    tk.Label(self.game_table, text="Center Court:", font="-size 9 -weight bold", bg="#EDEEF3").pack()
+                    tk.Label(self.game_table, text="Center Court:", font=self.bold_font, bg="#EDEEF3").pack()
                 else:
-                    tk.Label(self.game_table, text="Feld {}:".format(ci), font="-size 9 -weight bold", bg="#EDEEF3").pack()
+                    tk.Label(self.game_table, text="Feld {}:".format(ci), font=self.bold_font, bg="#EDEEF3").pack()
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
                 self.game_labels[ci].pack()
                 self.mmr_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
@@ -392,17 +384,17 @@ class GUI:
             buttonbox = tk.Frame(self.root, bg="#EDEEF3")
             self.wait_list = [False]*self.tur.p
             self.game_but = tk.Button(buttonbox, text="Nächstes Spiel", default=tk.ACTIVE, command=self.new_game, bg="#EDEEF3")
-            self.game_but.pack(side=tk.LEFT, padx=5, pady=5)
+            self.game_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
             self.result_but = tk.Button(buttonbox, text="Ergebnis eintragen", command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
-            self.result_but.pack(side=tk.LEFT, padx=5, pady=5)
+            self.result_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
             self.sets = 2
             self.stats_but = tk.Button(buttonbox, text="Punktestände", command=self.show_stats, bg="#EDEEF3")
-            self.stats_but.pack(side=tk.LEFT, padx=5, pady=5)
+            self.stats_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
             self.disp_mmr_var = tk.IntVar()
             self.disp_mmr_var.set(0)
             self.tur.display_mmr = 0
-            tk.Checkbutton(buttonbox, text="MMR anzeigen", variable=self.disp_mmr_var, command=self.toggle_mmr_display, bg="#EDEEF3").pack(side=tk.LEFT, padx=5, pady=5)
-            buttonbox.grid(row=4, columnspan=3, padx=5, pady=5)
+            tk.Checkbutton(buttonbox, text="MMR anzeigen", variable=self.disp_mmr_var, command=self.toggle_mmr_display, bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            buttonbox.grid(row=4, columnspan=3, padx=int(self.default_size/2), pady=int(self.default_size/2))
 
             #properties
             propbox = tk.Frame(self.root, bg="#EDEEF3")
@@ -410,7 +402,7 @@ class GUI:
             tk.Label(propbox, text=" Anzahl Courts: {}  |".format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
             tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
             tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=3)
-            self.message_label = tk.Label(propbox, text="", fg="red", font="-size 9 -weight bold", bg="#EDEEF3")
+            self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
             self.message_label.grid(row=1, columnspan=4)
             propbox.grid(row=5, columnspan=3)
 
@@ -506,9 +498,9 @@ class GUI:
         self.result_but.focus_set()
         for ii in range(self.tur.i-1):
             self.schedule_labels[ii]["fg"] = "red"
-            self.schedule_labels[ii]["font"] = "-size 9 -weight normal"
+            self.schedule_labels[ii]["font"] = self.default_font
         self.schedule_labels[self.tur.i-1]["fg"] = "dark green"
-        self.schedule_labels[self.tur.i - 1]["font"] = "-size 9 -weight bold"
+        self.schedule_labels[self.tur.i - 1]["font"] = self.bold_font
 
     def enter_results(self):
         self.res_window = ResultsWindow(self.root, self, title="beachomize - Ergebis Spiel " + str(self.tur.i))
