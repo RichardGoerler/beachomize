@@ -8,7 +8,10 @@ try:
     import tkMessageBox
 except:
     import tkinter.messagebox as tkMessageBox
-import tkFont
+try:
+    import tkFont
+except:
+    import tkinter.font as tkFont
 from PIL import Image, ImageTk
 import time
 import numpy as np
@@ -18,22 +21,36 @@ import turnier2 as turnier
 FILENAME = "players.txt"
 
 class StatsWindow(dialog.Dialog):
+
+
     def body(self, master):
-        sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
+        MAXROWS = 10
+        sort_indices = np.lexsort((-self.gui.tur.players.diff, -self.gui.tur.players.points, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
-        tk.Label(master, text="Name", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0)
-        tk.Label(master, text="Punkte", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1)
-        tk.Label(master, text="Balldifferenz", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2)
-        tk.Label(master, text="Bälle", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3)
-        if self.gui.tur.display_mmr:
-            tk.Label(master, text="MMR", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4)
-        for ip, pl in enumerate(stats_sorted):
-            tk.Label(master, text=pl.name, bg="#EDEEF3").grid(row=ip+1, column=0)
-            tk.Label(master, text=pl.score, bg="#EDEEF3").grid(row=ip+1, column=1)
-            tk.Label(master, text=pl.diff, bg="#EDEEF3").grid(row=ip+1, column=2)
-            tk.Label(master, text=pl.points, bg="#EDEEF3").grid(row=ip+1, column=3)
+        for u in range(1+int(self.gui.tur.p/MAXROWS)):
+            cs = u*(5+int(self.gui.tur.display_mmr))
+            tk.Label(master, text="Name", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs)
+            tk.Label(master, text="Punkte", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs)
+            tk.Label(master, text="Bälle", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2+cs)
+            tk.Label(master, text="Balldifferenz", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs)
             if self.gui.tur.display_mmr:
-                tk.Label(master, text=pl.mmr, bg="#EDEEF3").grid(row=ip+1, column=4)
+                tk.Label(master, text="MMR", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs)
+            tk.Label(master, text="Spiele    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr))
+            for ip, pl in enumerate(stats_sorted[u*MAXROWS:]):
+                if ip == MAXROWS:
+                    break
+                game_sub = 0
+                if pl.index == 0:
+                    game_sub += self.gui.tur.rizemode
+                if self.gui.tur.state == 1 and pl.index in self.gui.tur.games[-1]:
+                    game_sub -= 1
+                tk.Label(master, text=pl.name, bg="#EDEEF3").grid(row=ip+1, column=0+cs)
+                tk.Label(master, text=pl.score, bg="#EDEEF3").grid(row=ip+1, column=1+cs)
+                tk.Label(master, text=pl.points, bg="#EDEEF3").grid(row=ip+1, column=2+cs)
+                tk.Label(master, text=pl.diff, bg="#EDEEF3").grid(row=ip + 1, column=3 + cs)
+                if self.gui.tur.display_mmr:
+                    tk.Label(master, text=pl.mmr, bg="#EDEEF3").grid(row=ip+1, column=4+cs)
+                tk.Label(master, text=self.gui.tur.i-pl.wait+game_sub, bg="#EDEEF3").grid(row=ip+1, column=4+cs+int(self.gui.tur.display_mmr))
 
     def buttonbox(self):
         box = tk.Frame(self, bg="#EDEEF3")
@@ -384,17 +401,17 @@ class GUI:
             buttonbox = tk.Frame(self.root, bg="#EDEEF3")
             self.wait_list = [False]*self.tur.p
             self.game_but = tk.Button(buttonbox, text="Nächstes Spiel", default=tk.ACTIVE, command=self.new_game, bg="#EDEEF3")
-            self.game_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            self.game_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.result_but = tk.Button(buttonbox, text="Ergebnis eintragen", command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
-            self.result_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            self.result_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.sets = 2
             self.stats_but = tk.Button(buttonbox, text="Punktestände", command=self.show_stats, bg="#EDEEF3")
-            self.stats_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            self.stats_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.disp_mmr_var = tk.IntVar()
             self.disp_mmr_var.set(0)
             self.tur.display_mmr = 0
             tk.Checkbutton(buttonbox, text="MMR anzeigen", variable=self.disp_mmr_var, command=self.toggle_mmr_display, bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
-            buttonbox.grid(row=4, columnspan=3, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            buttonbox.grid(row=4, columnspan=3, padx=int(self.default_size/2), pady=self.default_size)
 
             #properties
             propbox = tk.Frame(self.root, bg="#EDEEF3")
@@ -408,6 +425,8 @@ class GUI:
 
             if self.tur.state == 1:
                 self.new_game(after_load=True)
+            elif self.tur.state > 1:
+                self.enter_results(after_load=True)
 
             self.root.mainloop()
 
@@ -502,8 +521,9 @@ class GUI:
         self.schedule_labels[self.tur.i-1]["fg"] = "dark green"
         self.schedule_labels[self.tur.i - 1]["font"] = self.bold_font
 
-    def enter_results(self):
-        self.res_window = ResultsWindow(self.root, self, title="beachomize - Ergebis Spiel " + str(self.tur.i))
+    def enter_results(self, after_load=False):
+        if not after_load:
+            self.res_window = ResultsWindow(self.root, self, title="beachomize - Ergebis Spiel " + str(self.tur.i))
         res_list = self.tur.results[self.tur.i-1]
         if not len(res_list[0]) == 0:
 
@@ -522,11 +542,12 @@ class GUI:
             else:
                 self.stats_but.focus_set()
                 self.stats_but["text"] = "Endergebnis anzeigen"
+            self.result_but["state"] = tk.NORMAL
             self.result_but["text"] = "Ergebnis korrigieren"
 
     def show_stats(self):
         game_number = self.tur.i
-        if len(self.tur.results[self.tur.i-1][0]) == 0:
+        if self.tur.state < 2:
             #results not entered yet
             game_number -= 1
         if game_number < 1:
@@ -540,7 +561,7 @@ class GUI:
 
     def toggle_mmr_display(self):
         self.tur.display_mmr = self.disp_mmr_var.get()
-        if len(self.tur.results[self.tur.i - 1][0]) == 0 and self.tur.i > 0:
+        if self.tur.state < 2 and self.tur.i > 0:
             #results not entered yet AND at least one game was announced already
             team_indices = self.tur.games[-1]
             if self.tur.display_mmr:

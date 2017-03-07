@@ -82,7 +82,7 @@ class Turnier:
             self.w = self.p-self.a
         self.rizemode = 0
         self.i = 0  # number of games played so far
-        self.state = -1  # -1: just initialized 0: if anything was done 1: expect results
+        self.state = -1  # -1: just initialized 0: after setting game count 1: after game announcement, 2: after entering results, 3: after correcting results
         self.games = []
         self.games_names = []
         self.results = []
@@ -103,6 +103,7 @@ class Turnier:
         self.maxwait = (self.g * self.w + self.rizemode) / self.p
         self._make_schedule()
         self.results = [[[]]*self.c]*self.g
+        self.state = 0
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
@@ -264,11 +265,13 @@ class Turnier:
                 self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff
                 self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff
 
-        self.state = 0
+        if self.state == 1:
+            self.state = 2
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
 
     def cor_res(self, res):
+        self.state = 3
         self.players = self.players_copy.copy()
         self.res(res)
 
