@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import nogui
-
 import numpy as np
 
 import pickle
@@ -156,7 +154,6 @@ class Turnier:
 
         # MAKING TEAMS (NEW METHOD)
         if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
-            nogui.out_reset_partner_matrix()
             self.partner_matrix = np.zeros((self.p, self.p))
             ret = 1
         teams_ready = False
