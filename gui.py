@@ -309,7 +309,7 @@ class SettingsWindow(dialog.Dialog):
         tk.Label(master, text="Schriftgröße:", bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         self.default_size_spin = tk.Spinbox(master, width=5, from_=5, to=30, bg="#EDEEF3")
         self.default_size_spin.delete(0, "end")
-        self.default_size_spin.insert(0, self.gui.default_size)
+        self.default_size_spin.insert(0, int(np.round(self.gui.default_size/self.gui.hdfactor)))
         self.default_size_spin.pack(side=tk.LEFT)
 
     def check_value(self):
@@ -368,12 +368,12 @@ class SettingsWindow(dialog.Dialog):
 
     def preview(self):
         self.check_value()
-        self.update_gui(self.val*self.gui.screenheight/1080)
+        self.update_gui(int(np.round(self.val*self.gui.hdfactor)))
 
     def apply(self):
         self.check_value()
-        self.gui.default_size = self.val*self.gui.screenheight/1080
-        np.save(".setting.npy", self.val*self.gui.screenheight/1080)
+        self.gui.default_size = int(np.round(self.val*self.gui.hdfactor))
+        np.save(".setting.npy", int(np.round(self.val*self.gui.hdfactor)))
 
     def cancel(self, event=None):
         self.update_gui(self.gui.default_size, this=False)
@@ -387,10 +387,11 @@ class GUI:
         self.screenwidth = self.root.winfo_screenwidth()
         self.screenheight = self.root.winfo_screenheight()
         self.screen_resolution = [self.screenwidth, self.screenheight]
-        if os.path.isfile(".setting.npy"):
+        self.hdfactor = self.screenheight/1080.
+        try:
             self.default_size = np.load(".setting.npy")
-        else:
-            self.default_size = int(15*self.screenheight/1080)
+        except:
+            self.default_size = int(np.round(15*self.hdfactor))
         self.default_font = tkFont.nametofont("TkDefaultFont")
         self.default_font.configure(size=self.default_size)
         self.text_font = tkFont.nametofont("TkTextFont")
