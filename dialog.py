@@ -31,7 +31,7 @@ class Dialog(tk.Toplevel):
 
         body = tk.Frame(self, bg="#EDEEF3")
         self.initial_focus = self.body(body)
-        body.pack(padx=10, pady=10)
+        body.pack(padx=self.gui.default_size, pady=self.gui.default_size)
 
         self.buttonbox()
 
@@ -60,11 +60,12 @@ class Dialog(tk.Toplevel):
 
     def header(self, master):
         # create dialog header.  this method should be overridden
-        imobj = Image.open("ims/logo-bg.png")
-        dim = self.gui.dims_by_scale(0.15)[0]
-        imobj = imobj.resize((dim, dim), Image.ANTIALIAS)
+        self.imorg = Image.open("ims/logo-bg.png")
+        dim = self.gui.dims_by_scale(0.015*self.gui.default_size)[1]
+        imobj = self.imorg.resize((dim, dim), Image.ANTIALIAS)
         self.gui.logo = ImageTk.PhotoImage(imobj)
-        tk.Label(master, image=self.gui.logo, bg="#EDEEF3").pack()
+        self.header_image_label = tk.Label(master, image=self.gui.logo, bg="#EDEEF3")
+        self.header_image_label.pack()
 
         pass
 
@@ -72,12 +73,12 @@ class Dialog(tk.Toplevel):
         # add standard button box. override if you don't want the
         # standard buttons
 
-        box = tk.Frame(self)
+        box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
-        w.pack(side=tk.LEFT, padx=5, pady=5)
-        w = tk.Button(box, text="Cancel", width=10, command=self.cancel, bg="#EDEEF3")
-        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+        w = tk.Button(box, text="Abbrechen", width=10, command=self.cancel, bg="#EDEEF3")
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
 
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)

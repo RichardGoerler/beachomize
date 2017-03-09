@@ -64,10 +64,10 @@ class Turnier:
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float),
                        ('wait', int)])
         self.players = np.recarray(self.p, dtype=dt)
-        self.players.index = np.arange(self.p)
-        self.players.name = names
-        self.players.mmr = self.init_mmr
-        self.players.score = self.players.diff = self.players.points = self.players.wait = [0]*self.p
+        self.players["index"] = np.arange(self.p)
+        self.players["name"] = names
+        self.players["mmr"] = self.init_mmr
+        self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = [0]*self.p
         self.players_copy = None
         self.partner_matrix = np.zeros((self.p, self.p))
         self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False)

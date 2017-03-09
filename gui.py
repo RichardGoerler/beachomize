@@ -17,6 +17,7 @@ import time
 import numpy as np
 import dialog
 import turnier2 as turnier
+import os
 
 FILENAME = "players.txt"
 
@@ -56,7 +57,7 @@ class StatsWindow(dialog.Dialog):
         box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="Schließen", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
-        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
 
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
@@ -87,7 +88,7 @@ class ResultsWindow(dialog.Dialog):
             else:
                 tk.Label(master, text="Feld {}:".format(ci), font=self.gui.bold_font, bg="#EDEEF3").grid(row=2*ci, column=0)
             self.game_labels.append(tk.Label(master, text=names_sorted[2 * ci][0] + "/" + names_sorted[2 * ci][1] + " - " + names_sorted[2 * ci + 1][0] + "/" + names_sorted[2 * ci + 1][1], bg="#EDEEF3"))
-            self.game_labels[ci].grid(row=2*ci+1, column=0, padx=10)
+            self.game_labels[ci].grid(row=2*ci+1, column=0, padx=self.gui.default_size)
             self.spinboxes.append([])
             self.placeholders.append([])
             for si in range(3):
@@ -115,13 +116,13 @@ class ResultsWindow(dialog.Dialog):
         box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
-        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         stateval = tk.NORMAL if self.gui.sets > 1 else tk.DISABLED
         self.reduce_but = tk.Button(box, text="Satz -", width=5, command=self.reduce_set_number, state=stateval, bg="#EDEEF3")
-        self.reduce_but.pack(side=tk.LEFT, padx=5, pady=5)
+        self.reduce_but.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         stateval = tk.NORMAL if self.gui.sets < 3 else tk.DISABLED
         self.increase_but = tk.Button(box, text="Satz +", width=5, command=self.increase_set_number, state=stateval, bg="#EDEEF3")
-        self.increase_but.pack(side=tk.LEFT, padx=5, pady=5)
+        self.increase_but.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
 
         #self.bind("<Return>", self.ok_bind)
         #self.bind("<Escape>", self.cancel)
@@ -195,14 +196,14 @@ class WelcomeWindow(dialog.Dialog):
         box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="Neu", width=10, command=self.new, default=tk.ACTIVE, bg="#EDEEF3")
-        w.grid(row=0, column=0, padx=5, pady=5)
+        w.grid(row=0, column=0, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         w = tk.Button(box, text="Laden", width=10, command=self.ok, bg="#EDEEF3")
-        w.grid(row=0, column=1, padx=5, pady=5)
+        w.grid(row=0, column=1, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         self.cvar = tk.IntVar()
         self.cvar.set(3)
         tk.Label(box, text="Anzahl Felder:", bg="#EDEEF3").grid(row=1, column=0)
         tk.OptionMenu(box, self.cvar, 1, 2, 3, 4, 5).grid(row=2, column=0)
-        tk.Label(box, text="Starzeit und Dauer:", bg="#EDEEF3").grid(row=3, column=0, pady=5)
+        tk.Label(box, text="Starzeit und Dauer:", bg="#EDEEF3").grid(row=3, column=0, pady=int(self.gui.default_size/2))
         self.time_var = tk.StringVar()
         self.time_var.set("2100")
         self.time_entry = tk.Entry(box, textvariable=self.time_var, width=5)
@@ -210,7 +211,7 @@ class WelcomeWindow(dialog.Dialog):
         self.duration_var = tk.StringVar()
         self.duration_var.set("300")
         self.duration_entry = tk.Entry(box, textvariable=self.duration_var, width=5)
-        self.duration_entry.grid(row=5, column=0, pady=5)
+        self.duration_entry.grid(row=5, column=0, pady=int(self.gui.default_size/2))
 
         self.bind('<Return>', self.new)
 
@@ -297,17 +298,99 @@ class GameNumberWindow(dialog.Dialog):
         box = tk.Frame(self, bg="#EDEEF3")
 
         w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
-        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
 
         self.bind("<Return>", self.ok)
 
         box.pack()
 
+class SettingsWindow(dialog.Dialog):
+    def body(self, master):
+        tk.Label(master, text="Schriftgröße:", bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+        self.default_size_spin = tk.Spinbox(master, width=5, from_=5, to=30, bg="#EDEEF3")
+        self.default_size_spin.delete(0, "end")
+        self.default_size_spin.insert(0, self.gui.default_size)
+        self.default_size_spin.pack(side=tk.LEFT)
+
+    def check_value(self):
+        try:
+            self.val = int(self.default_size_spin.get())
+        except:
+            self.val = self.gui.default_size
+        if not self.val > 4 and self.val < 31:
+            self.val = self.gui.default_size
+        self.default_size_spin.delete(0, "end")
+        self.default_size_spin.insert(0, self.val)
+
+    def update_gui(self, val, main=True, this=True):
+        if val > 4 and val < 31:
+            #fonts
+            self.gui.default_font.configure(size=val)
+            self.gui.text_font.configure(size=val)
+            self.gui.bold_font.configure(size=val)
+            self.gui.big_bold_font.configure(size=int(1.33 * val))
+            self.gui.clock_font.configure(size=int(2.22 * val))
+            #self header
+            if this:
+                dim = self.gui.dims_by_scale(0.015 * val)[1]
+                imobj = self.imorg.resize((dim, dim), Image.ANTIALIAS)
+                self.gui.logo = ImageTk.PhotoImage(imobj)
+                self.header_image_label["image"] = self.gui.logo
+            #gui banner
+            if main:
+                dim = self.gui.dims_by_scale(0.045 * val)[1]
+                fac = float(dim) / self.gui.imorg.size[0]
+                dim2 = int(self.gui.imorg.size[1] * fac)
+                imobj = self.gui.imorg.resize((dim, dim2), Image.ANTIALIAS)
+                self.gui.banner = ImageTk.PhotoImage(imobj)
+                self.gui.banner_label["image"]=self.gui.banner
+                self.gui.banner_label.grid(columnspan=3)
+                #gui settings button
+                dim = self.gui.dims_by_scale(0.002 * val)[1]
+                imobj = self.gui.cogorg.resize((dim, dim), Image.ANTIALIAS)
+                self.gui.cog = ImageTk.PhotoImage(imobj)
+                self.gui.settings_but["image"] =self.gui.cog
+
+    def buttonbox(self):
+        box = tk.Frame(self, bg="#EDEEF3")
+
+        w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+        w = tk.Button(box, text="Vorschau", width=10, command=self.preview, bg="#EDEEF3")
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
+        w = tk.Button(box, text="Verwerfen", width=10, command=self.cancel, bg="#EDEEF3")
+        w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+    def preview(self):
+        self.check_value()
+        self.update_gui(self.val*self.gui.screenheight/1080)
+
+    def apply(self):
+        self.check_value()
+        self.gui.default_size = self.val*self.gui.screenheight/1080
+        np.save(".setting.npy", self.val*self.gui.screenheight/1080)
+
+    def cancel(self, event=None):
+        self.update_gui(self.gui.default_size, this=False)
+
+        self.parent.focus_set()
+        self.destroy()
+
 class GUI:
     def __init__(self):
         self.root = tk.Tk()
         self.screenwidth = self.root.winfo_screenwidth()
-        self.default_size = int(10*self.screenwidth/1080)
+        self.screenheight = self.root.winfo_screenheight()
+        self.screen_resolution = [self.screenwidth, self.screenheight]
+        if os.path.isfile(".setting.npy"):
+            self.default_size = np.load(".setting.npy")
+        else:
+            self.default_size = int(15*self.screenheight/1080)
         self.default_font = tkFont.nametofont("TkDefaultFont")
         self.default_font.configure(size=self.default_size)
         self.text_font = tkFont.nametofont("TkTextFont")
@@ -325,7 +408,6 @@ class GUI:
 
         self.root.title("beachomize by Rize")
         self.root.configure(bg="#EDEEF3")
-        self.screen_resolution = [self.root.winfo_screenwidth(), self.root.winfo_screenheight()]
         self.tur = None
 
         # self.root.withdraw()
@@ -339,13 +421,14 @@ class GUI:
 
             #create main window elements here
             #banner
-            imobj = Image.open("ims/banner2.jpg")
-            dim = self.dims_by_scale(0.45)[0]
-            fac = float(dim) / imobj.size[0]
-            dim2 = int(imobj.size[1] * fac)
-            imobj = imobj.resize((dim, dim2), Image.ANTIALIAS)
+            self.imorg = Image.open("ims/banner2.jpg")
+            dim = self.dims_by_scale(0.045*self.default_size)[1]
+            fac = float(dim) / self.imorg.size[0]
+            dim2 = int(self.imorg.size[1] * fac)
+            imobj = self.imorg.resize((dim, dim2), Image.ANTIALIAS)
             self.banner = ImageTk.PhotoImage(imobj)
-            tk.Label(self.root, image=self.banner, bg="#EDEEF3").grid(columnspan=3)
+            self.banner_label = tk.Label(self.root, image=self.banner, bg="#EDEEF3")
+            self.banner_label.grid(columnspan=3)
 
             #clock
             clock = tk.Label(self.root, font=self.clock_font, bg="#EDEEF3")
@@ -410,7 +493,15 @@ class GUI:
             self.disp_mmr_var = tk.IntVar()
             self.disp_mmr_var.set(0)
             self.tur.display_mmr = 0
-            tk.Checkbutton(buttonbox, text="MMR anzeigen", variable=self.disp_mmr_var, command=self.toggle_mmr_display, bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            minibox = tk.Frame(buttonbox, bg="#EDEEF3")
+            tk.Checkbutton(minibox, text="MMR", variable=self.disp_mmr_var, command=self.toggle_mmr_display, bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
+            self.cogorg = Image.open("ims/cog.png")
+            dim = self.dims_by_scale(0.002 * self.default_size)[1]
+            imobj = self.cogorg.resize((dim, dim), Image.ANTIALIAS)
+            self.cog = ImageTk.PhotoImage(imobj)
+            self.settings_but = tk.Button(minibox, text="", image=self.cog, command=self.settings, bg="#EDEEF3")
+            self.settings_but.pack(side=tk.LEFT, padx=int(self.default_size / 2), pady=int(self.default_size / 2))
+            minibox.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=int(self.default_size/2))
             buttonbox.grid(row=4, columnspan=3, padx=int(self.default_size/2), pady=self.default_size)
 
             #properties
@@ -440,9 +531,6 @@ class GUI:
         posX = int((self.screen_resolution[0] - window_dims[0]) / 2)
         posY = int((self.screen_resolution[1] - window_dims[1]) / 2)
         return [posX, posY]
-
-    def out_player_count(self, p):
-        tkMessageBox.showinfo("Spieleranzahl", "Anzahl der Spieler: {}".format(p))
 
     def in_game_count(self):
         self.game_count = tk.IntVar()
@@ -573,6 +661,9 @@ class GUI:
                 for i in range(len(team_indices) / 2):
                     self.mmr_labels[i]["text"] = ""
         pass
+
+    def settings(self):
+        self.settings_window = SettingsWindow(self.root, self, title="beachomize - Einstellungen")
 
 if __name__ == '__main__':
     GUI()
