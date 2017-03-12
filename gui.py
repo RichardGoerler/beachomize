@@ -26,14 +26,14 @@ class StatsWindow(dialog.Dialog):
 
     def body(self, master):
         MAXROWS = 10
-        sort_indices = np.lexsort((-self.gui.tur.players.diff, -self.gui.tur.players.points, -self.gui.tur.players.score))
+        sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
         for u in range(1+int(self.gui.tur.p/MAXROWS)):
             cs = u*(5+int(self.gui.tur.display_mmr))
             tk.Label(master, text="Name", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs)
             tk.Label(master, text="Punkte", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs)
-            tk.Label(master, text="Bälle", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2+cs)
-            tk.Label(master, text="Balldifferenz", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs)
+            tk.Label(master, text="Balldifferenz", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2 + cs)
+            tk.Label(master, text="Bälle", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs)
             if self.gui.tur.display_mmr:
                 tk.Label(master, text="MMR", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs)
             tk.Label(master, text="Spiele    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr))
@@ -47,8 +47,8 @@ class StatsWindow(dialog.Dialog):
                     game_sub -= 1
                 tk.Label(master, text=pl.name, bg="#EDEEF3").grid(row=ip+1, column=0+cs)
                 tk.Label(master, text=pl.score, bg="#EDEEF3").grid(row=ip+1, column=1+cs)
-                tk.Label(master, text=pl.points, bg="#EDEEF3").grid(row=ip+1, column=2+cs)
-                tk.Label(master, text=pl.diff, bg="#EDEEF3").grid(row=ip + 1, column=3 + cs)
+                tk.Label(master, text=pl.diff, bg="#EDEEF3").grid(row=ip + 1, column=2 + cs)
+                tk.Label(master, text=pl.points, bg="#EDEEF3").grid(row=ip + 1, column=3 + cs)
                 if self.gui.tur.display_mmr:
                     tk.Label(master, text=pl.mmr, bg="#EDEEF3").grid(row=ip+1, column=4+cs)
                 tk.Label(master, text=self.gui.tur.i-pl.wait+game_sub, bg="#EDEEF3").grid(row=ip+1, column=4+cs+int(self.gui.tur.display_mmr))
@@ -507,12 +507,13 @@ class GUI:
 
             #properties
             propbox = tk.Frame(self.root, bg="#EDEEF3")
-            tk.Label(propbox, text=" Anzahl Spieler: {}  |".format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
-            tk.Label(propbox, text=" Anzahl Courts: {}  |".format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
+            tk.Label(propbox, text=" Spieler: {}  |".format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
+            tk.Label(propbox, text=" Courts: {}  |".format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
             tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
-            tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=3)
+            tk.Label(propbox, text=" Einsätze: {}  |".format(int((self.tur.a*self.tur.g-self.tur.rizemode)/self.tur.p))).grid(row=0, column=3)
+            tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
             self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
-            self.message_label.grid(row=1, columnspan=4)
+            self.message_label.grid(row=1, columnspan=5)
             propbox.grid(row=5, columnspan=3)
 
             if self.tur.state == 1:
@@ -599,7 +600,9 @@ class GUI:
             self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
             self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
             if self.tur.display_mmr:
-                self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ") - " + str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ")"
+                self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[2*i]) + ") - " + str(mmr_sorted[2*i+1][0]) + "/" + str(mmr_sorted[2*i+1][1]) + " (ø" + str(mmr_mean[2*i+1]) + ")"
+            else:
+                self.mmr_labels[i]["text"] = ""
         self.game_but["state"] = tk.DISABLED
         self.result_but["state"] = tk.NORMAL
         self.result_but["text"] = "Ergebnis eintragen"
@@ -657,7 +660,7 @@ class GUI:
                 mmr_sorted = self.tur.players.mmr[team_indices]
                 mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
                 for i in range(len(team_indices) / 2):
-                    self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ") - " + str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[i]) + ")"
+                    self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[2 * i]) + ") - " + str(mmr_sorted[2 * i + 1][0]) + "/" + str(mmr_sorted[2 * i + 1][1]) + " (ø" + str(mmr_mean[2 * i + 1]) + ")"
             else:
                 for i in range(len(team_indices) / 2):
                     self.mmr_labels[i]["text"] = ""
