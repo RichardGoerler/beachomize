@@ -50,7 +50,7 @@ class StatsWindow(dialog.Dialog):
                 tk.Label(master, text=pl.diff, bg="#EDEEF3").grid(row=ip + 1, column=2 + cs)
                 tk.Label(master, text=pl.points, bg="#EDEEF3").grid(row=ip + 1, column=3 + cs)
                 if self.gui.tur.display_mmr:
-                    tk.Label(master, text=pl.mmr, bg="#EDEEF3").grid(row=ip+1, column=4+cs)
+                    tk.Label(master, text="{:.1f}".format(pl.mmr), bg="#EDEEF3").grid(row=ip+1, column=4+cs)
                 tk.Label(master, text=self.gui.tur.i-pl.wait+game_sub, bg="#EDEEF3").grid(row=ip+1, column=4+cs+int(self.gui.tur.display_mmr))
 
     def buttonbox(self):
@@ -600,7 +600,7 @@ class GUI:
             self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
             self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
             if self.tur.display_mmr:
-                self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[2*i]) + ") - " + str(mmr_sorted[2*i+1][0]) + "/" + str(mmr_sorted[2*i+1][1]) + " (ø" + str(mmr_mean[2*i+1]) + ")"
+                self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 self.mmr_labels[i]["text"] = ""
         self.game_but["state"] = tk.DISABLED
@@ -660,7 +660,7 @@ class GUI:
                 mmr_sorted = self.tur.players.mmr[team_indices]
                 mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
                 for i in range(len(team_indices) / 2):
-                    self.mmr_labels[i]["text"] = str(mmr_sorted[2 * i][0]) + "/" + str(mmr_sorted[2 * i][1]) + " (ø" + str(mmr_mean[2 * i]) + ") - " + str(mmr_sorted[2 * i + 1][0]) + "/" + str(mmr_sorted[2 * i + 1][1]) + " (ø" + str(mmr_mean[2 * i + 1]) + ")"
+                    self.mmr_labels[i]["text"] = "{:.2f}/{:.2f} /ø{:.2f}) - {:.2f}/{:.2f} /ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 for i in range(len(team_indices) / 2):
                     self.mmr_labels[i]["text"] = ""

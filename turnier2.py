@@ -59,12 +59,12 @@ class Turnier:
         self.start_time = start_time
         self.duration = duration
         self.p = len(names)
-        dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('mmr_tag', int)])
+        dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('mmr_tag_w', int), ('mmr_tag_l', int)])
         self.players = np.recarray(self.p, dtype=dt)
         self.players["index"] = np.arange(self.p)
         self.players["name"] = names
         self.players["mmr"] = self.init_mmr
-        self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag"] = [0]*self.p
+        self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag_w"] = self.players["mmr_tag_l"] = [0]*self.p
         self.players_copy = None
         self.partner_matrix = np.zeros((self.p, self.p))
         self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False)
@@ -232,36 +232,52 @@ class Turnier:
         team_indices_sorted = self.games[game_number]
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
-            pl = self.players[team_indices_sorted[2 * ci:2 * ci + 1, :]]
-            print(pl)
+            pl = self.players[team_indices_sorted[2 * ci:2 * ci + 2]]
             for set_result in court_results:   # si = set index
                 score1 = set_result[0]
                 score2 = set_result[1]
                 scorediff = score1-score2
 
                 # generate index 0: lost, 1: draw, 2: won. index default score array with that index
-                pl[0, 0].score += [0, 0, 1][np.sign(scorediff) + 1]
-                pl[0, 1].score += [0, 0, 1][np.sign(scorediff) + 1]
-                pl[1, 0].score += [0, 0, 1][np.sign(-scorediff) + 1]
-                pl[1, 1].score += [0, 0, 1][np.sign(-scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci, 0]].score += [0, 0, 1][np.sign(scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci, 1]].score += [0, 0, 1][np.sign(scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci + 1, 0]].score += [0, 0, 1][np.sign(-scorediff) + 1]
+                self.players[team_indices_sorted[2 * ci + 1, 1]].score += [0, 0, 1][np.sign(-scorediff) + 1]
 
                 # difference is from the POV of team 1, so positive if team 1 won
-                pl[0, 0].diff += scorediff
-                pl[0, 1].diff += scorediff
-                pl[1, 0].diff -= scorediff
-                pl[1, 1].diff -= scorediff
+                self.players[team_indices_sorted[2 * ci, 0]].diff += scorediff
+                self.players[team_indices_sorted[2 * ci, 1]].diff += scorediff
+                self.players[team_indices_sorted[2 * ci + 1, 0]].diff -= scorediff
+                self.players[team_indices_sorted[2 * ci + 1, 1]].diff -= scorediff
 
-                pl[0, 0].points += score1
-                pl[0, 1].points += score1
-                pl[1, 0].points += score2
-                pl[1, 1].points += score2
+                self.players[team_indices_sorted[2 * ci, 0]].points += score1
+                self.players[team_indices_sorted[2 * ci, 1]].points += score1
+                self.players[team_indices_sorted[2 * ci + 1, 0]].points += score2
+                self.players[team_indices_sorted[2 * ci + 1, 1]].points += score2
 
-                # mmr is changed according to score difference at the moment, may be changed later
-                # this means, when initialized with 0, mmr = diff at the end of the day
-                pl[0, 0].mmr += scorediff
-                pl[0, 1].mmr += scorediff
-                pl[1, 0].mmr -= scorediff
-                pl[1, 1].mmr -= scorediff
+                # mmr_tag_w keeps track of number of wins {0,1,2} and mmr_tag_l accordingly for losses
+                # mmr_tag_w is increased in case of win, mmr_tag_l is decreased and vice versa. In case of tie both are decreased
+                # according to mmr_tags scorediff is multiplied with 0.3, 0.6 or 1. When on winning/losing streak, game outcomes are more strongly weighted
+                # this is intended to decrease the influence of random fluctuations in performance
+                self.players[team_indices_sorted[2 * ci, 0]].mmr += scorediff*[0.3, 0.6, 1][pl[0,0].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,0].mmr_tag_l]
+                self.players[team_indices_sorted[2 * ci, 1]].mmr += scorediff*[0.3, 0.6, 1][pl[0,1].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,1].mmr_tag_l]
+                self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,0].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,0].mmr_tag_l]
+                self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,1].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,1].mmr_tag_l]
+
+                self.players[team_indices_sorted[2 * ci, 0]].mmr_tag_w += 1 if scorediff > 0 else -1
+                self.players[team_indices_sorted[2 * ci, 1]].mmr_tag_w += 1 if scorediff > 0 else -1
+                self.players[team_indices_sorted[2 * ci + 1, 0]].mmr_tag_w += 1 if scorediff < 0 else -1
+                self.players[team_indices_sorted[2 * ci + 1, 1]].mmr_tag_w += 1 if scorediff < 0 else -1
+
+                self.players[team_indices_sorted[2 * ci, 0]].mmr_tag_l += 1 if scorediff < 0 else -1
+                self.players[team_indices_sorted[2 * ci, 1]].mmr_tag_l += 1 if scorediff < 0 else -1
+                self.players[team_indices_sorted[2 * ci + 1, 0]].mmr_tag_l += 1 if scorediff > 0 else -1
+                self.players[team_indices_sorted[2 * ci + 1, 1]].mmr_tag_l += 1 if scorediff > 0 else -1
+
+                for ti in range(0,2):
+                    for pi in range(0,2):
+                        self.players[team_indices_sorted[2 * ci+ti, pi]].mmr_tag_w = min(max(self.players[team_indices_sorted[2 * ci+ti, pi]].mmr_tag_w,0), 2)
+                        self.players[team_indices_sorted[2 * ci + ti, pi]].mmr_tag_l = min(max(self.players[team_indices_sorted[2 * ci+ti, pi]].mmr_tag_l,0), 2)
 
         if self.state == 1:
             self.state = 2
