@@ -510,7 +510,7 @@ class GUI:
             tk.Label(propbox, text=" Spieler: {}  |".format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
             tk.Label(propbox, text=" Courts: {}  |".format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
             tk.Label(propbox, text=" Wartespieler: {}  |".format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
-            tk.Label(propbox, text=" Einsätze: {}  |".format(int((self.tur.a*self.tur.g-self.tur.rizemode)/self.tur.p))).grid(row=0, column=3)
+            tk.Label(propbox, text=" Einsätze: {}  |".format(int((self.tur.a*self.tur.g-self.tur.rizemode)/self.tur.p)), bg="#EDEEF3").grid(row=0, column=3)
             tk.Label(propbox, text=" Rizemode: {}  ".format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
             self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
             self.message_label.grid(row=1, columnspan=5)
