@@ -232,7 +232,7 @@ class Turnier:
         team_indices_sorted = self.games[game_number]
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
-            pl = self.players[team_indices_sorted[2 * ci:2 * ci + 2]]
+            pl = self.players[team_indices_sorted[2 * ci:2 * ci + 2]] #I know the values are copied here, but I buy myself readibility in mmr lines by keeping it short and pay with efficiency
             for set_result in court_results:   # si = set index
                 score1 = set_result[0]
                 score2 = set_result[1]
