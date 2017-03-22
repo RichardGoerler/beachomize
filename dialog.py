@@ -4,10 +4,11 @@ except:
     import tkinter as tk
 
 from PIL import Image, ImageTk
+import lang
 
 class Dialog(tk.Toplevel):
 
-    def __init__(self, parent, gui, title="beachomize"):
+    def __init__(self, parent, gui, title=lang.DIALOG_TITLE):
 
         tk.Toplevel.__init__(self, parent)
         self.configure(bg="#EDEEF3")
@@ -75,9 +76,9 @@ class Dialog(tk.Toplevel):
 
         box = tk.Frame(self, bg="#EDEEF3")
 
-        w = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
+        w = tk.Button(box, text=lang.DIALOG_OK, width=10, command=self.ok, default=tk.ACTIVE, bg="#EDEEF3")
         w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
-        w = tk.Button(box, text="Abbrechen", width=10, command=self.cancel, bg="#EDEEF3")
+        w = tk.Button(box, text=lang.DIALOG_CANCEL, width=10, command=self.cancel, bg="#EDEEF3")
         w.pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
 
         self.bind("<Return>", self.ok)
