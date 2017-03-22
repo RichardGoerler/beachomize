@@ -199,23 +199,55 @@ class WelcomeWindow(dialog.Dialog):
         w.grid(row=0, column=0, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         w = tk.Button(box, text="Laden", width=10, command=self.ok, bg="#EDEEF3")
         w.grid(row=0, column=1, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+
         self.cvar = tk.IntVar()
         self.cvar.set(3)
-        tk.Label(box, text="Anzahl Felder:", bg="#EDEEF3").grid(row=1, column=0)
-        tk.OptionMenu(box, self.cvar, 1, 2, 3, 4, 5).grid(row=2, column=0)
-        tk.Label(box, text="Starzeit und Dauer:", bg="#EDEEF3").grid(row=3, column=0, pady=int(self.gui.default_size/2))
+        tk.Label(box, text="Anzahl Felder:", bg="#EDEEF3").grid(row=1, column=0, pady=int(self.gui.default_size/2))
+        self.cmenu = tk.OptionMenu(box, self.cvar, 1, 2, 3, 4, 5)
+        self.cmenu.config(bg="#EDEEF3")
+        self.cmenu["menu"].config(bg="#EDEEF3")
+        self.cmenu.grid(row=2, column=0)
+        tk.Label(box, text="Starzeit und Dauer:", bg="#EDEEF3").grid(row=3, column=0, pady=int(self.gui.default_size / 2))
         self.time_var = tk.StringVar()
         self.time_var.set("2100")
-        self.time_entry = tk.Entry(box, textvariable=self.time_var, width=5)
+        self.time_entry = tk.Entry(box, textvariable=self.time_var, width=5, bg="#EDEEF3")
         self.time_entry.grid(row=4, column=0)
         self.duration_var = tk.StringVar()
         self.duration_var.set("300")
-        self.duration_entry = tk.Entry(box, textvariable=self.duration_var, width=5)
-        self.duration_entry.grid(row=5, column=0, pady=int(self.gui.default_size/2))
+        self.duration_entry = tk.Entry(box, textvariable=self.duration_var, width=5, bg="#EDEEF3")
+        self.duration_entry.grid(row=5, column=0, pady=int(self.gui.default_size / 2))
+        self.mmrvar = tk.StringVar()
+        self.mmrvar.set(turnier.MMR_METHODS[-1])
+        tk.Label(box, text="MMR-Methode:", bg="#EDEEF3").grid(row=6, column=0, pady=int(self.gui.default_size / 2))
+        self.mmrmenu = tk.OptionMenu(box, self.mmrvar, command=self.update_mmr, *turnier.MMR_METHODS)
+        self.mmrmenu["menu"].config(bg="#EDEEF3")
+        self.mmrmenu.config(bg="#EDEEF3")
+        self.mmrmenu.grid(row=7, column=0)
+        self.mmrtagvar = tk.StringVar()
+        self.mmrtagvar.set(turnier.MMR_TAGS[0])
+        self.taglabel = tk.Label(box, text="MMR-Tags:", bg="#EDEEF3")
+        self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
+        self.tagmenu = tk.OptionMenu(box, self.mmrtagvar, *turnier.MMR_METHODS)
+        self.tagmenu.config(bg="#EDEEF3")
+        self.tagmenu["menu"].config(bg="#EDEEF3")
+        self.tagmenu.grid(row=9, column=0)
+        self.tag_rendered = True
 
         self.bind('<Return>', self.new)
 
         box.pack()
+
+    def update_mmr(self, event=None):
+        if "streak" in self.mmrvar.get():
+            if not self.tag_rendered:
+                self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
+                self.tagmenu.grid(row=9, column=0)
+                self.tag_rendered = True
+        else:
+            if self.tag_rendered:
+                self.taglabel.grid_forget()
+                self.tagmenu.grid_forget()
+                self.tag_rendered = False
 
     def validate(self):
         try:
@@ -264,7 +296,8 @@ class WelcomeWindow(dialog.Dialog):
         self.update_idletasks()
 
         names, mmr = self.gui.in_players()
-        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), start_time=starttime, duration=duration)
+        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), start_time=starttime, duration=duration,
+                                       matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()))
 
         self.cancel()
 
@@ -306,11 +339,16 @@ class GameNumberWindow(dialog.Dialog):
 
 class SettingsWindow(dialog.Dialog):
     def body(self, master):
-        tk.Label(master, text="Schriftgröße:", bg="#EDEEF3").pack(side=tk.LEFT, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
+        tk.Button(master, text="Kommandozeile", command=self.cmd, bg="#EDEEF3").grid(row=0, columnspan=2, pady = self.gui.default_size)
+        tk.Label(master, text="Schriftgröße:", bg="#EDEEF3").grid(row=1, column=0, padx=int(self.gui.default_size/2), pady=int(self.gui.default_size/2))
         self.default_size_spin = tk.Spinbox(master, width=5, from_=5, to=30, bg="#EDEEF3")
         self.default_size_spin.delete(0, "end")
         self.default_size_spin.insert(0, int(np.round(self.gui.default_size/self.gui.hdfactor)))
-        self.default_size_spin.pack(side=tk.LEFT)
+        self.default_size_spin.grid(row=1, column=1)
+        return self.default_size_spin
+
+    def cmd(self, event=None):
+        _ = CommandWindow(self.master, self.gui)
 
     def check_value(self):
         try:
@@ -380,6 +418,27 @@ class SettingsWindow(dialog.Dialog):
 
         self.parent.focus_set()
         self.destroy()
+
+class CommandWindow(dialog.Dialog):
+    def header(self, master):
+        pass
+
+    def body(self, master):
+        self.cm = tk.StringVar()
+        tk.Entry(master, textvariable=self.cm, bg="#EDEEF3").pack()
+
+    def validate(self):
+        try:
+            print(eval(self.cm.get()))
+        except Exception as e:
+            try:
+                exec(self.cm.get())
+            except:
+                print(e)
+                tkMessageBox.showwarning("Fehler", "eval und exec fehlgeschlagen. Bei eval aufgetretene Exception ausgegeben.")
+                return 0
+        return 1
+
 
 class GUI:
     def __init__(self):
@@ -660,7 +719,7 @@ class GUI:
                 mmr_sorted = self.tur.players.mmr[team_indices]
                 mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
                 for i in range(len(team_indices) / 2):
-                    self.mmr_labels[i]["text"] = "{:.2f}/{:.2f} /ø{:.2f}) - {:.2f}/{:.2f} /ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
+                    self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 for i in range(len(team_indices) / 2):
                     self.mmr_labels[i]["text"] = ""
