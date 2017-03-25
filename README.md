@@ -8,7 +8,7 @@ Software for organizing shuffled beach volleyball tournaments with a matchmaking
 
 ### Game mode
 #### Shuffling
-In each round, teams of two are randomly formed
+In each round, teams of two are randomly formed.
 #### Matchmaking
 After creating teams, fixtures are set based on MMR (match making rating) of each player. The team with the best average MMR plays against the second-best. MMRs are updated after each game.
 
