@@ -313,15 +313,15 @@ class GameNumberWindow(dialog.Dialog):
         tk.Label(master, text=lang.GAME_NUMBER_HEADING, bg="#EDEEF3").pack()
         gridframe = tk.Frame(master, bg="#EDEEF3")
         buttonlist = []
-        tk.Label(gridframe, text=lang.RIZEMODE_NORMAL, bg="#EDEEF3").grid(row=0)
+        tk.Label(gridframe, text=lang.RIZEMODE_NORMAL.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=0)
         for gg, good in enumerate(self.goodlist):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(good), variable=self.gui.game_count, value=good, bg="#EDEEF3"))
             buttonlist[-1].grid(row=0, column=1+gg)
-        tk.Label(gridframe, text=lang.RIZEMODE_WAIT, bg="#EDEEF3").grid(row=1)
+        tk.Label(gridframe, text=lang.RIZEMODE_WAIT.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=1)
         for ww, wait in enumerate(self.waitlist):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(wait), variable=self.gui.game_count, value=wait, bg="#EDEEF3"))
             buttonlist[-1].grid(row=1, column=1+ww)
-        tk.Label(gridframe, text=lang.RIZEMODE_PLAY, bg="#EDEEF3").grid(row=2)
+        tk.Label(gridframe, text=lang.RIZEMODE_PLAY.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=2)
         for pp, play in enumerate(self.playlist):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(play), variable=self.gui.game_count, value=play, bg="#EDEEF3"))
             buttonlist[-1].grid(row=2, column=1+pp)
@@ -571,7 +571,7 @@ class GUI:
             tk.Label(propbox, text=lang.PROP_COURTS.format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
             tk.Label(propbox, text=lang.PROP_WAIT.format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
             tk.Label(propbox, text=lang.PROP_APPEARANCES.format(int((self.tur.a*self.tur.g-self.tur.rizemode)/self.tur.p)), bg="#EDEEF3").grid(row=0, column=3)
-            tk.Label(propbox, text=lang.PROP_RIZEMODE.format(self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
+            tk.Label(propbox, text=lang.PROP_RIZEMODE.format(self.tur.players.name[0], self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
             self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
             self.message_label.grid(row=1, columnspan=5)
             propbox.grid(row=5, columnspan=3)
