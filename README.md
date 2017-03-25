@@ -53,4 +53,5 @@ In your anaconda or linux console, navigate to the **beachomize** directory and 
 Contact
 -------
 Richard Görler, Hattingen, Germany
+
 richard.goerler[at]gmail&#46;com
