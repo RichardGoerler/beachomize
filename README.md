@@ -48,6 +48,7 @@ On Windows, *Anaconda* is usually the way to run python. You can download the wi
 Usage
 -----
 Before starting your tournament, make sure you place you player names in the file *players.txt*. Each line should consist of a player name and the initial MMR of that player (default 0).
+
 In your anaconda or linux console, navigate to the **beachomize** directory and type **python gui&#46;py**
 
 Contact
