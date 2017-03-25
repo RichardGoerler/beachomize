@@ -7,9 +7,9 @@ Software for organizing shuffled beach volleyball tournaments with a matchmaking
 ![main_example](http://beachomize.de/image/main_example.png)
 
 ### Game mode
-##### Shuffling
+#### Shuffling
 In each round, teams of two are randomly formed
-##### Matchmaking
+#### Matchmaking
 After creating teams, fixtures are set based on MMR (match making rating) of each player. The team with the best average MMR plays against the second-best. MMRs are updated after each game.
 
 Features
@@ -38,11 +38,11 @@ Installation
 Download the [latest release](https://github.com/RichardGoerler/beachomize/releases) or clone the [git repository](https://github.com/RichardGoerler/beachomize).
 ### Prerequisites
 In order to run **beachomize** you need to have python installed on your machine. python2 is recommended, but it should also run work python3. The python packages tkinter and numpy are required.
-##### Install python2, tkinter and numpy
-###### Linux
+#### Install python2, tkinter and numpy
+##### Linux
 Use your package manager to install the packages *python*, *python-tk* and *python-numpy*
 For instance, on Ubuntu **sudo apt-get install python python-tk python-numpy** should work in most cases.
-###### Windows
+##### Windows
 On Windows, *Anaconda* is usually the way to run python. You can download the windows version [here](https://www.continuum.io/downloads#windows). In that installation, the required packages should already be included.
 
 Usage
