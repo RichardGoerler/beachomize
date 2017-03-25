@@ -18,7 +18,7 @@ Features
 ![welcome](http://beachomize.de/image/welcome.png)
 
 Set number of courts, time and duration, and matchmaking method.
-### Handle any number of players (odd, prime)
+### Handle any number of players (odd / prime)
 ![game_number](http://beachomize.de/image/game_number.png)
 
 Get suggestions for number of games to play. Adjust the game number by letting player 1 run "outside the competition".
@@ -26,6 +26,8 @@ Get suggestions for number of games to play. Adjust the game number by letting p
 ![wait_select](http://beachomize.de/image/wait_select.png)
 
 Usually the players that wait are randomly determined each round, but players can also request to skip a round.
+### Non-repeating team compositions
+As long as it is possible, no player will have the same teammate twice.
 ### Adjust font size
 ![settings](http://beachomize.de/image/settings.png)
 ### Auto-save
@@ -50,6 +52,8 @@ Usage
 Before starting your tournament, make sure you place you player names in the file *players.txt*. Each line should consist of a player name and the initial MMR of that player (default 0).
 
 In your anaconda or linux console, navigate to the **beachomize** directory and type **python gui&#46;py**
+
+To change the language, edit the file *\__init\__.py* in the *lang*-directory. Replace **eng** with the language of your choice. A python-file with that name, defining all necessary constants, has to be present in the *lang*-folder.
 
 Contact
 -------
