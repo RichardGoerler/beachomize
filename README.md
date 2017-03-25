@@ -16,12 +16,15 @@ Features
 --------
 ### Customize your tournament
 ![welcome](http://beachomize.de/image/welcome.png)
+
 Set number of courts, time and duration, and matchmaking method.
 ### Handle any number of players (odd, prime)
 ![game_number](http://beachomize.de/image/game_number.png)
+
 Get suggestions for number of games to play. Adjust the game number by letting player 1 run "outside the competition".
 ### Let players request to wait
 ![wait_select](http://beachomize.de/image/wait_select.png)
+
 Usually the players that wait are randomly determined each round, but players can also request to skip a round.
 ### Adjust font size
 ![settings](http://beachomize.de/image/settings.png)
