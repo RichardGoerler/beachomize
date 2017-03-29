@@ -18,7 +18,7 @@ import numpy as np
 import dialog
 import turnier2 as turnier
 import lang
-import os
+import pdb
 
 FILENAME = "players.txt"
 
@@ -203,20 +203,38 @@ class WelcomeWindow(dialog.Dialog):
 
         self.cvar = tk.IntVar()
         self.cvar.set(3)
+        self.cvar_outer = tk.IntVar()
+        self.cvar_outer.set(3)
         tk.Label(box, text=lang.WELCOME_COURT_NUMBER, bg="#EDEEF3").grid(row=1, column=0, pady=int(self.gui.default_size/2))
         self.cmenu = tk.OptionMenu(box, self.cvar, 1, 2, 3, 4, 5)
         self.cmenu.config(bg="#EDEEF3")
         self.cmenu["menu"].config(bg="#EDEEF3")
         self.cmenu.grid(row=2, column=0)
+        self.clabel_outer = tk.Label(box, text=lang.WELCOME_COURT_NUMBER_OUTER, bg="#EDEEF3")
+        self.cmenu_outer = tk.OptionMenu(box, self.cvar_outer, 1, 2, 3, 4, 5)
+        self.cmenu_outer.config(bg="#EDEEF3")
+        self.cmenu_outer["menu"].config(bg="#EDEEF3")
+        self.out_show = False
+
         tk.Label(box, text=lang.WELCOME_TIME_DURATION, bg="#EDEEF3").grid(row=3, column=0, pady=int(self.gui.default_size / 2))
-        self.time_var = tk.StringVar()
-        self.time_var.set("2100")
-        self.time_entry = tk.Entry(box, textvariable=self.time_var, width=5, bg="#EDEEF3")
-        self.time_entry.grid(row=4, column=0)
-        self.duration_var = tk.StringVar()
-        self.duration_var.set("300")
-        self.duration_entry = tk.Entry(box, textvariable=self.duration_var, width=5, bg="#EDEEF3")
-        self.duration_entry.grid(row=5, column=0, pady=int(self.gui.default_size / 2))
+        self.time_scale = tk.Scale(box, from_=0, to=23.5, resolution=0.5, orient=tk.HORIZONTAL, showvalue=0, label=lang.TIME_FORMAT.format(21, 0), length=self.gui.default_size * 10,
+                                   command=self.time_update, bg="#EDEEF3")
+        self.time_scale.set(21.0)
+        self.time_scale.grid(row=4, column=0)
+        self.duration_scale = tk.Scale(box, from_=1, to=6, resolution=0.5, orient=tk.HORIZONTAL, showvalue=0, label=lang.DURATION_FORMAT.format(3, 0), length=self.gui.default_size * 10,
+                                       command=self.duration_update, bg="#EDEEF3")
+        self.duration_scale.set(3.0)
+        self.duration_scale.grid(row=5, column=0)
+        tk.Label(box, text=lang.WELCOME_INTERVALS, bg="#EDEEF3").grid(row=3, column=1, pady=int(self.gui.default_size / 2))
+        self.interval1_scale = tk.Scale(box, from_=21, to=23, resolution=0.5, orient=tk.HORIZONTAL, showvalue=0, label=lang.TIME_FORMAT.format(21, 0), length=self.gui.default_size * 10,
+                                   command=self.interval1_update, bg="#EDEEF3")
+        self.interval1_scale.set(21.0)
+        self.interval1_scale.grid(row=4, column=1)
+        self.interval2_scale = tk.Scale(box, from_=22, to=24, resolution=0.5, orient=tk.HORIZONTAL, showvalue=0, label=lang.TIME_FORMAT.format(24, 0), length=self.gui.default_size * 10,
+                                       command=self.interval2_update, bg="#EDEEF3")
+        self.interval2_scale.set(24.0)
+        self.interval2_scale.grid(row=5, column=1)
+
         self.mmrvar = tk.StringVar()
         self.mmrvar.set(turnier.MMR_METHODS[-1])
         tk.Label(box, text=lang.WELCOME_MMR_METHOD, bg="#EDEEF3").grid(row=6, column=0, pady=int(self.gui.default_size / 2))
@@ -237,6 +255,67 @@ class WelcomeWindow(dialog.Dialog):
         self.bind('<Return>', self.new)
 
         box.pack()
+
+    def show_outer(self):
+        if not self.out_show:
+            self.out_show = True
+            self.clabel_outer.grid(row=6, column=1, pady=int(self.gui.default_size / 2))
+            self.cmenu_outer.grid(row=7, column=1)
+
+    def hide_outer(self):
+        if self.out_show:
+            self.out_show = False
+            self.clabel_outer.grid_forget()
+            self.cmenu_outer.grid_forget()
+
+    def timdur(self, tim, dur):
+        self.interval1_scale["from"] = tim
+        self.interval1_scale["to"] = tim + dur - 1
+        self.interval1_scale.set(tim)
+        self.interval1_update()
+        self.interval2_scale["from"] = tim + 1
+        self.interval2_scale["to"] = tim + dur
+        self.interval2_scale.set(tim + dur)
+        self.interval2_update()
+        self.hide_outer()
+
+    def time_update(self, event=None):
+        tim = self.time_scale.get()
+        dur = self.duration_scale.get()
+        self.timdur(tim, dur)
+        hour = int(tim)
+        minute = int(60*(tim-hour))
+        self.time_scale["label"] = lang.TIME_FORMAT.format(hour,minute)
+
+    def duration_update(self, event=None):
+        dur = self.duration_scale.get()
+        tim = self.time_scale.get()
+        self.timdur(tim,dur)
+        hour = int(dur)
+        minute = int(60*(dur-hour))
+        self.duration_scale["label"] = lang.DURATION_FORMAT.format(hour,minute)
+
+    def interval1_update(self, event=None):
+        int1 = self.interval1_scale.get()
+        if int1 == self.interval1_scale["from"]:
+            self.hide_outer()
+        else:
+            self.show_outer()
+        self.interval2_scale["from"] = int1+1
+        hour = int(int1)
+        minute = int(60*(int1-hour))
+        self.interval1_scale["label"] = lang.TIME_FORMAT.format(hour%24, minute)
+
+    def interval2_update(self, event=None):
+        int2 = self.interval2_scale.get()
+        if int2 == self.interval2_scale["to"]:
+            self.hide_outer()
+        else:
+            self.show_outer()
+        self.interval1_scale["to"] = int2-1
+        hour = int(int2)
+        minute = int(60*(int2-hour))
+        self.interval2_scale["label"] = lang.TIME_FORMAT.format(hour%24, minute)
 
     def update_mmr(self, event=None):
         if "streak" in self.mmrvar.get():
@@ -264,40 +343,22 @@ class WelcomeWindow(dialog.Dialog):
         pass
 
     def new(self, event=None):   #parameter event for call by event binding from enter
-        time_entry = self.time_var.get()
-        time_split = [int(i3) for j3 in [s3.split() for s3 in [i2 for j2 in [time_entry.split(':')] for i2 in j2]] for i3 in j3 if i3.isdigit()]
-        if len(time_split) > 2 or len(time_split) == 0:
-            tkMessageBox.showwarning(lang.ERROR_TITLE, lang.WELCOME_INVALID_TIME)
-            self.initial_focus = self.time_entry
-            self.time_entry.select_range(0, tk.END)
-            return
-        elif len(time_split) == 2:
-            starttime = time_split[0]*100 + time_split[1]
-        elif len(time_split) == 1:
-            starttime = time_split[0]
-        duration_entry = self.duration_var.get().replace(',', '.')
-        try:
-            duration_float = float(duration_entry)
-            if duration_float > 10:  #arbitrary
-                raise Exception
-            duration = 100*int(duration_float) + 60*(duration_float-int(duration_float))
-        except:
-            duration_split = [int(i3) for j3 in [s3.split() for s3 in [i2 for j2 in [duration_entry.split(':')] for i2 in j2]] for i3 in j3 if i3.isdigit()]
-            if len(duration_split) > 2 or len(duration_split) == 0:
-                tkMessageBox.showwarning(lang.ERROR_TITLE, lang.WELCOME_INVALID_DURATION)
-                self.initial_focus = self.duration_entry
-                self.duration_entry.select_range(0,tk.END)
-                return
-            elif len(duration_split) == 2:
-                duration = duration_split[0] * 100 + duration_split[1]
-            elif len(duration_split) == 1:
-                duration = duration_split[0]
+        start = self.time_scale.get()
+        starttime = int(start) * 100 + int(60 * (int(start) - start))
+        dur = self.duration_scale.get()
+        duration = int(dur) * 100 + int(60 * (int(dur) - dur))
+        end = start + dur
+        int1 = self.interval1_scale.get()
+        int2 = self.interval2_scale.get()
+        t1 = (int1-start) / dur
+        t2 = (int2-int1) / dur
+        t3 = (end-int2) /dur
 
         self.withdraw()
         self.update_idletasks()
 
         names, mmr = self.gui.in_players()
-        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), start_time=starttime, duration=duration,
+        self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), courts13=self.cvar_outer.get(), start_time=starttime, duration=duration, t1=t1, t2=t2, t3=t3,
                                        matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()))
 
         self.cancel()
@@ -520,7 +581,7 @@ class GUI:
             for id, tim in enumerate(self.tur.schedule):
                 hour = int(tim/100)
                 minute = tim-hour*100
-                self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT_SCHEDULE).format(id+1, hour, minute), bg="#EDEEF3"))
+                self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
                 self.schedule_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)
@@ -530,7 +591,7 @@ class GUI:
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
             self.game_labels = []
             self.mmr_labels = []
-            for ci in range(self.tur.c):
+            for ci in range(max(self.tur.c13, self.tur.c2)):
                 if ci == 0:
                     tk.Label(self.game_table, text=lang.CENTER_COURT_NAME, font=self.bold_font, bg="#EDEEF3").pack()
                 else:
@@ -568,9 +629,9 @@ class GUI:
             #properties
             propbox = tk.Frame(self.root, bg="#EDEEF3")
             tk.Label(propbox, text=lang.PROP_PLAYERS.format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
-            tk.Label(propbox, text=lang.PROP_COURTS.format(self.tur.c), bg="#EDEEF3").grid(row=0, column=1)
-            tk.Label(propbox, text=lang.PROP_WAIT.format(self.tur.w), bg="#EDEEF3").grid(row=0, column=2)
-            tk.Label(propbox, text=lang.PROP_APPEARANCES.format(int((self.tur.a*self.tur.g-self.tur.rizemode)/self.tur.p)), bg="#EDEEF3").grid(row=0, column=3)
+            tk.Label(propbox, text=lang.PROP_COURTS.format(str(self.tur.c13) + ", " + str(self.tur.c2)), bg="#EDEEF3").grid(row=0, column=1)
+            tk.Label(propbox, text=lang.PROP_WAIT.format(str(self.tur.w13) + ", " + str(self.tur.w2)), bg="#EDEEF3").grid(row=0, column=2)
+            tk.Label(propbox, text=lang.PROP_APPEARANCES.format(self.tur.appearances), bg="#EDEEF3").grid(row=0, column=3)
             tk.Label(propbox, text=lang.PROP_RIZEMODE.format(self.tur.players.name[0], self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
             self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
             self.message_label.grid(row=1, columnspan=5)

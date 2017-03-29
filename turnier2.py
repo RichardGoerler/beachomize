@@ -4,6 +4,8 @@ import numpy as np
 
 import pickle
 
+import pdb
+
 MMR_NONE = 0
 MMR_FLAT = 1
 MMR_FLAT_STREAK = 2
@@ -52,9 +54,9 @@ class Turnier:
         i = 1  # number of games played
         r = 2  # number of waiting rounds to test (when 1, calculation is aborted the first time f is zero)
         while not r == 0:
-            if self.p == f + 1:  # if one player (Rize) can play a game more to make it work
+            if self.p == f + 1:  # if one player (player 0) can play a game more to make it work
                 self.playlist.append(i)
-            if f == 1:  # if one player (Rize) can wait a game more
+            if f == 1:  # if one player (player 0) can wait a game more
                 self.waitlist.append(i)
             if f == 0:  # if it works regularly
                 self.goodlist.append(i)
@@ -63,10 +65,71 @@ class Turnier:
             f %= self.p
             i += 1
 
-    def __init__(self, names, mmr, courts=3, start_time=2100, duration=300, matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3):
+    def games_intervalwise(self, games):
+        PRECISION = 0.001
+        if self.t2 == 1.:
+            return [0,games,0]
+        step = 1./games
+        progress = 0.
+        interval = 1
+        int_list = [0, self.t1, self.t2, self.t3]
+        out_long = self.c13 < self.c2     #bool, true if outer interval games overlap into the inner interval, false if the other way round
+        g = [0,0,0]
+        while not progress+step > 1. + PRECISION:
+            out = (interval-1)%2 == 0           #bool, True if in t1 or t3, False if in t2
+            offset = sum(int_list[0:interval])
+            int_progress = progress - offset
+            progress += step
+            if int_list[interval] - int_progress > step - PRECISION:   #if we can fit the next game completely into the interval
+                g[interval - 1] += 1                            #then just add the game to the interval
+            elif out_long == out:                          #if the game would overlap into the next interval, and this is allowed by out_long
+                g[interval - 1] += 1                            #then add the game to the interval and switch to the next interval
+                interval += 1
+                if int_list[interval] < step + PRECISION:                   #but if this interval is too short to fit an entire game, switch to the next after that
+                    interval += 1
+            else:                                          #if the current interval is not able to overlap (but the next)
+                interval += 1                                   #switch to the next interval and add the game to that one
+                g[interval - 1] += 1
+                offset = sum(int_list[0:interval])
+                int_progress = progress - offset
+                if int_list[interval] - int_progress < 0 + PRECISION:       #if the next interval was so short, that we already completely used it
+                    interval += 1                                   #switch to the next after that.
+
+            # if games == 7:
+            #     pdb.set_trace()
+        return g
+
+
+    def calc_game_counts2(self, max_g = 20):
+        wait_list = [self.w13, self.w2, self.w13]
+        for gi in range(1, max_g):                         #gi: game count to test
+            g_ints = self.games_intervalwise(gi)
+            f = 0                                       #f: player position in round waiting queue
+            wraps = 0
+            for interval_index in range(3):                 #the three intervals are gone through one after another
+                for _ in range(g_ints[interval_index]):         #iterate through the games that are played in that interval
+                    f += wait_list[interval_index]
+                    if not f < self.p:                      #not using modulus here because we want to get the number of times we wrapped around. This is in the end the number of appearances of each player.
+                        f -= self.p
+                        wraps += 1
+            if self.p == f + 1:  # if one player (player 0) can play a game more to make it work
+                self.playlist.append(gi)
+            elif f == 1:  # if one player (player 0) can wait a game more
+                self.waitlist.append(gi)
+            elif f == 0:  # if it works regularly
+                self.goodlist.append(gi)
+            self.appearances = wraps
+
+
+
+    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
+        #consists of three intervals t1..t2..t3 at max. These numbers are proportions of the total time. t1 and t3 take place the same number of courts.
+        self.t1 = t1
+        self.t2 = t2
+        self.t3 = t3
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('mmr_tag_w', int), ('mmr_tag_l', int)])
         self.players = np.recarray(self.p, dtype=dt)
@@ -80,13 +143,25 @@ class Turnier:
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
         self.orgatime = orgatime
-        self.c = courts
-        self.a = self.c*4
-        self.w = self.p-self.a
-        while self.w < 0:
-            self.c -= 1
-            self.a = self.c*4
-            self.w = self.p-self.a
+        self.c2 = courts    #courts during middle interval
+        self.c13 = courts13   #courts during outer intervals
+        self.a2 = self.c2*4
+        self.a13 = self.c13 * 4
+        self.w2 = self.p-self.a2
+        self.w13 = self.p - self.a13
+        while self.w2 < 0:
+            self.c2 -= 1
+            self.a2 = self.c2*4
+            self.w2 = self.p-self.a2
+        while self.w13 < 0:
+            self.c13 -= 1
+            self.a13 = self.c13*4
+            self.w13 = self.p-self.a13
+        if self.t2 == 0:
+            self.c2 = self.c13
+        if self.c2 == self.c13:
+            self.t1 = self.t3 = 0.
+            self.t2 = 1.
         self.rizemode = 0
         self.i = 0  # number of games played so far
         self.state = -1  # -1: just initialized 0: after setting game count 1: after game announcement, 2: after entering results, 3: after correcting results
@@ -96,7 +171,8 @@ class Turnier:
         self.waitlist = []
         self.playlist = []
         self.goodlist = []
-        self.calc_game_counts()
+        self.appearances = 0
+        self.calc_game_counts2()
         self.g = 0
         self.maxwait = 0
 
@@ -107,9 +183,20 @@ class Turnier:
         elif self.g in self.playlist:
             self.rizemode = 1
         self.players[0].wait = self.rizemode
-        self.maxwait = (self.g * self.w + self.rizemode) / self.p
+        self.maxwait = self.g - self.appearances
+        self.g_list = self.games_intervalwise(self.g)
+        if self.g_list[0] == 0:
+            self.interval = 2     #interval saves which interval turnier is currently in. beginning with 1, not with zero because of alignment with variable names and other reasons
+            self.w = self.w2
+            self.c = self.c2
+        else:
+            self.interval = 1
+            self.w = self.w13
+            self.c = self.c13
         self._make_schedule()
-        self.results = [[[]]*self.c]*self.g
+        self.results = [[[]]*self.c13]*self.g_list[0]
+        self.results.extend([[[]]*self.c2]*self.g_list[1])
+        self.results.extend([[[]] * self.c13] * self.g_list[2])
         self.state = 0
         with open("saved.p", 'wb') as f:
             pickle.dump(self, f)
@@ -136,6 +223,16 @@ class Turnier:
     def game(self, wait_request=None):
         if self.g < 1:
             return -1
+        if self.interval == 1:
+            if self.i == self.g_list[0]:
+                self.interval = 2
+                self.w = self.w2
+                self.c = self.c2
+        if self.interval == 2:
+            if self.i == self.g_list[1]+self.g_list[0]:
+                self.interval = 3
+                self.w = self.w13
+                self.c = self.c13
         ret = 0    #0 no matrix reset, 1 regular matrix reset, 2 error matrix reset
         #WAITING
         waiting_this_turn = self.canwait(wait_request)
