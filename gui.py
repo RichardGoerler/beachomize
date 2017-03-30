@@ -26,19 +26,18 @@ FILENAME_COURTS = "courts.txt"
 
 class StatsWindow(dialog.Dialog):
 
-
     def body(self, master):
         sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
         for u in range(1+int(self.gui.tur.p/self.gui.stats_height)):
             cs = u*(5+int(self.gui.tur.display_mmr))
-            tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs, ipadx=self.gui.default_size/4)
-            tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs, ipadx=self.gui.default_size/4)
-            tk.Label(master, text=lang.STATS_DIFF, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2 + cs, ipadx=self.gui.default_size/4)
-            tk.Label(master, text=lang.STATS_POINTS, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs, ipadx=self.gui.default_size/4)
+            tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs, ipadx=int(self.gui.default_size/4))
+            tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs, ipadx=int(self.gui.default_size/4))
+            tk.Label(master, text=lang.STATS_DIFF, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2 + cs, ipadx=int(self.gui.default_size/4))
+            tk.Label(master, text=lang.STATS_POINTS, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs, ipadx=int(self.gui.default_size/4))
             if self.gui.tur.display_mmr:
-                tk.Label(master, text=lang.STATS_MMR, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs, ipadx=self.gui.default_size/4)
-            tk.Label(master, text=lang.STATS_APPEARANCES+"    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr), ipadx=self.gui.default_size/4)
+                tk.Label(master, text=lang.STATS_MMR, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs, ipadx=int(self.gui.default_size/4))
+            tk.Label(master, text=lang.STATS_APPEARANCES+"    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr), ipadx=int(self.gui.default_size/4))
             for ip, pl in enumerate(stats_sorted[u*self.gui.stats_height:]):
                 if ip == self.gui.stats_height:
                     break
@@ -641,12 +640,18 @@ class GUI:
             self.game_labels = []
             self.mmr_labels = []
             court_names = self.in_court_names()
+            cmax = max(self.tur.c13, self.tur.c2)
+            h1 = max(int(cmax/2),1)
+            h2 = cmax-h1
+            col = 0
             for ci in range(max(self.tur.c13, self.tur.c2)):
-                tk.Label(self.game_table, text=court_names[ci], font=self.bold_font, bg="#EDEEF3").pack()
+                if ci == h1:
+                    col = 1
+                tk.Label(self.game_table, text=court_names[ci], font=self.bold_font, bg="#EDEEF3").grid(row=3*(ci-h1*col), column=col, ipadx = int(self.default_size/2))
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
-                self.game_labels[ci].pack()
+                self.game_labels[ci].grid(row=3*(ci-h1*col)+1, column=col, ipadx = int(self.default_size/2))
                 self.mmr_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
-                self.mmr_labels[ci].pack()
+                self.mmr_labels[ci].grid(row=3*(ci-h1*col)+2, column=col, ipadx = int(self.default_size/2))
             self.game_table.grid(row=3,column=2)
 
             #buttons
