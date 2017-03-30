@@ -65,7 +65,7 @@ class Turnier:
             i += 1
 
     def games_intervalwise(self, games):
-        PRECISION = 0.001
+        PRECISION = 2
         if self.t2 == 1.:
             return [0,games,0]
         step = 1./games
@@ -74,17 +74,18 @@ class Turnier:
         int_list = [0, self.t1, self.t2, self.t3]
         out_long = self.c13 < self.c2     #bool, true if outer interval games overlap into the inner interval, false if the other way round
         g = [0,0,0]
-        while not progress+step > 1. + PRECISION:
+        while not round(progress+step, PRECISION) > 1.:
             out = (interval-1)%2 == 0           #bool, True if in t1 or t3, False if in t2
             offset = sum(int_list[0:interval])
             int_progress = progress - offset
             progress += step
-            if int_list[interval] - int_progress > step - PRECISION:   #if we can fit the next game completely into the interval
+            int_remainder = int_list[interval] - int_progress
+            if round(int_remainder, PRECISION) > round(step, PRECISION):     #if step fits into interval remainder
                 g[interval - 1] += 1                            #then just add the game to the interval
-            elif out_long == out:                          #if the game would overlap into the next interval, and this is allowed by out_long
+            elif out_long == out or round(int_remainder, PRECISION) == round(step, PRECISION):  #if the game would overlap into (and that is allowed by out_long) or fit exactly into the next interval
                 g[interval - 1] += 1                            #then add the game to the interval and switch to the next interval
                 interval += 1
-                if int_list[interval] < step + PRECISION:                   #but if this interval is too short to fit an entire game, switch to the next after that
+                if round(int_list[interval], PRECISION) < round(step, PRECISION):  #but if this interval is too short to fit an entire game, switch to the next after that
                     interval += 1
             else:                                          #if the current interval is not able to overlap (but the next)
                 interval += 1                                   #switch to the next interval and add the game to that one
@@ -97,6 +98,7 @@ class Turnier:
 
 
     def calc_game_counts2(self, max_g = 20):
+        self.maxwait_list = [0]*max_g
         wait_list = [self.w13, self.w2, self.w13]
         for gi in range(1, max_g):                         #gi: game count to test
             g_ints = self.games_intervalwise(gi)
@@ -114,7 +116,7 @@ class Turnier:
                 self.waitlist.append(gi)
             elif f == 0:  # if it works regularly
                 self.goodlist.append(gi)
-            self.appearances = wraps
+            self.maxwait_list[gi] = wraps
 
 
 
@@ -167,10 +169,8 @@ class Turnier:
         self.waitlist = []
         self.playlist = []
         self.goodlist = []
-        self.appearances = 0
         self.calc_game_counts2()
         self.g = 0
-        self.maxwait = 0
 
     def set_game_count(self, g):
         self.g = g
@@ -179,7 +179,8 @@ class Turnier:
         elif self.g in self.playlist:
             self.rizemode = 1
         self.players[0].wait = self.rizemode
-        self.maxwait = self.g - self.appearances
+        self.maxwait = self.maxwait_list[self.g]
+        self.appearances = self.g - self.maxwait
         self.g_list = self.games_intervalwise(self.g)
         if self.g_list[0] == 0:
             self.interval = 2     #interval saves which interval turnier is currently in. beginning with 1, not with zero because of alignment with variable names and other reasons

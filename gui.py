@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+#TODO: optionally provide file for court naming
+#TODO: optionally leave init mmr out in players file, then it is set to 0
+
 try:
     import Tkinter as tk
 except:
@@ -25,7 +28,7 @@ class StatsWindow(dialog.Dialog):
 
 
     def body(self, master):
-        MAXROWS = 10
+        MAXROWS = 13
         sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
         for u in range(1+int(self.gui.tur.p/MAXROWS)):
@@ -563,7 +566,7 @@ class GUI:
                 clock.after(200, tick)
             tick()
 
-            MAXROWS = 10
+            MAXROWS = 13
 
             #player list
             tk.Label(self.root, text=lang.PLAYER_LIST_TITLE, font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=0, pady=self.default_size)
