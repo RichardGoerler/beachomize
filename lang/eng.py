@@ -64,8 +64,6 @@ WELCOME_INTERVALS = "Intervals:"
 WELCOME_MMR_METHOD = "MMR method:"
 WELCOME_MMR_TAGS = "MMR tags:"
 WELCOME_NO_SAVED_FILE = "No saved tournament found."
-WELCOME_INVALID_TIME = "Invalid start time"
-WELCOME_INVALID_DURATION = "Invalid duration"
 
 RESULTS_TITLE = "beachomize - result for game {}"
 RESULTS_SET_DECREASE = "Set -"

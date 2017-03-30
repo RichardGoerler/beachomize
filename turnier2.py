@@ -4,8 +4,6 @@ import numpy as np
 
 import pickle
 
-import pdb
-
 MMR_NONE = 0
 MMR_FLAT = 1
 MMR_FLAT_STREAK = 2
@@ -40,13 +38,14 @@ class Turnier:
         self.schedule = [self.start_time]
         for i in range(1, self.g):
             last = self.schedule[-1]
-            lasthour = (last / 100) * 100
+            lasthour = int(last / 100) * 100
             lastminute = last % 100
             minute = lastminute + self.timeframe
             hour = lasthour
             if minute > 59:
                 minute -= 60
                 hour += 100
+            hour %= 2400
             self.schedule.append(minute+hour)
 
     def calc_game_counts(self):
@@ -94,9 +93,6 @@ class Turnier:
                 int_progress = progress - offset
                 if int_list[interval] - int_progress < 0 + PRECISION:       #if the next interval was so short, that we already completely used it
                     interval += 1                                   #switch to the next after that.
-
-            # if games == 7:
-            #     pdb.set_trace()
         return g
 
 

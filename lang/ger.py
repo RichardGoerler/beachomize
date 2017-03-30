@@ -64,8 +64,6 @@ WELCOME_INTERVALS = "Intervalle:"
 WELCOME_MMR_METHOD = "MMR-Methode:"
 WELCOME_MMR_TAGS = "MMR-Tags:"
 WELCOME_NO_SAVED_FILE = "Kein gespeichertes Turnier vorhanden."
-WELCOME_INVALID_TIME = "Ungültige Startzeit"
-WELCOME_INVALID_DURATION = "Ungültige Turnierdauer"
 
 RESULTS_TITLE = "beachomize - Ergebis Spiel {}"
 RESULTS_SET_DECREASE = "Satz -"

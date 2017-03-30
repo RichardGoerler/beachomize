@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#TODO: When loading saved turnier to just entered results: announce player names, color code schedule correctly
-#TODO: Implement correct showing of w13/w2 and c13/c2 for different scenarios (where different t intervals are 0 or not)
-#TODO: Insert some graphical division between intervals in schedule
-
 try:
     import Tkinter as tk
 except:
@@ -22,7 +18,6 @@ import numpy as np
 import dialog
 import turnier2 as turnier
 import lang
-import pdb
 
 FILENAME = "players.txt"
 
@@ -35,13 +30,13 @@ class StatsWindow(dialog.Dialog):
         stats_sorted = self.gui.tur.players[sort_indices]
         for u in range(1+int(self.gui.tur.p/MAXROWS)):
             cs = u*(5+int(self.gui.tur.display_mmr))
-            tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs)
-            tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs)
-            tk.Label(master, text=lang.STATS_DIFF, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2 + cs)
-            tk.Label(master, text=lang.STATS_POINTS, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs)
+            tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs, ipadx=self.gui.default_size/4)
+            tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs, ipadx=self.gui.default_size/4)
+            tk.Label(master, text=lang.STATS_DIFF, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=2 + cs, ipadx=self.gui.default_size/4)
+            tk.Label(master, text=lang.STATS_POINTS, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=3 + cs, ipadx=self.gui.default_size/4)
             if self.gui.tur.display_mmr:
-                tk.Label(master, text=lang.STATS_MMR, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs)
-            tk.Label(master, text=lang.STATS_APPEARANCES+"    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr))
+                tk.Label(master, text=lang.STATS_MMR, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs, ipadx=self.gui.default_size/4)
+            tk.Label(master, text=lang.STATS_APPEARANCES+"    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr), ipadx=self.gui.default_size/4)
             for ip, pl in enumerate(stats_sorted[u*MAXROWS:]):
                 if ip == MAXROWS:
                     break
@@ -491,7 +486,9 @@ class CommandWindow(dialog.Dialog):
 
     def body(self, master):
         self.cm = tk.StringVar()
-        tk.Entry(master, textvariable=self.cm, bg="#EDEEF3").pack()
+        e = tk.Entry(master, textvariable=self.cm, bg="#EDEEF3")
+        e.pack()
+        return e
 
     def validate(self):
         try:
@@ -582,11 +579,20 @@ class GUI:
             tk.Label(self.root, text=lang.SCHEDULE_TITLE, font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=1, pady=self.default_size)
             self.schedule_table = tk.Frame(self.root, bg="#EDEEF3")
             self.schedule_labels = []
+            g_cum_nonzero = []
+            for i, gel in enumerate(self.tur.g_list):
+                if gel == 0:
+                    continue
+                g_cum_nonzero.append(gel+sum(self.tur.g_list[0:i]))
+            offs = 0
             for id, tim in enumerate(self.tur.schedule):
+                if id == g_cum_nonzero[offs]:
+                    tk.Label(self.schedule_table, text="", bg="#EDEEF3").grid(row=(id+offs)%MAXROWS, column=int((id+offs)/MAXROWS), ipadx = int(self.default_size/2))
+                    offs += 1
                 hour = int(tim/100)
                 minute = int(tim-hour*100)
                 self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
-                self.schedule_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
+                self.schedule_labels[id].grid(row=(id+offs)%MAXROWS, column=int((id+offs)/MAXROWS), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)
 
@@ -631,19 +637,31 @@ class GUI:
             buttonbox.grid(row=4, columnspan=3, padx=int(self.default_size/2), pady=self.default_size)
 
             #properties
+            c_text = ""
+            w_text = ""
+            out = False   #false in the beginning because negating is the first we do in loop
+            for i, gel in enumerate(self.tur.g_list):
+                out = not out
+                if gel == 0:
+                    continue
+                if not c_text == "":
+                    c_text += ", "
+                    w_text += ", "
+                c_text += str(self.tur.c13) if out else str(self.tur.c2)
+                w_text += str(self.tur.w13) if out else str(self.tur.w2)
             propbox = tk.Frame(self.root, bg="#EDEEF3")
             tk.Label(propbox, text=lang.PROP_PLAYERS.format(self.tur.p), bg="#EDEEF3").grid(row=0, column=0)
-            tk.Label(propbox, text=lang.PROP_COURTS.format(str(self.tur.c13) + ", " + str(self.tur.c2)), bg="#EDEEF3").grid(row=0, column=1)
-            tk.Label(propbox, text=lang.PROP_WAIT.format(str(self.tur.w13) + ", " + str(self.tur.w2)), bg="#EDEEF3").grid(row=0, column=2)
+            tk.Label(propbox, text=lang.PROP_COURTS.format(c_text), bg="#EDEEF3").grid(row=0, column=1)
+            tk.Label(propbox, text=lang.PROP_WAIT.format(w_text), bg="#EDEEF3").grid(row=0, column=2)
             tk.Label(propbox, text=lang.PROP_APPEARANCES.format(self.tur.appearances), bg="#EDEEF3").grid(row=0, column=3)
             tk.Label(propbox, text=lang.PROP_RIZEMODE.format(self.tur.players.name[0], self.tur.rizemode), bg="#EDEEF3").grid(row=0, column=4)
             self.message_label = tk.Label(propbox, text="", fg="red", font=self.bold_font, bg="#EDEEF3")
             self.message_label.grid(row=1, columnspan=5)
             propbox.grid(row=5, columnspan=3)
 
-            if self.tur.state == 1:
+            if self.tur.state > 0:
                 self.new_game(after_load=True)
-            elif self.tur.state > 1:
+            if self.tur.state > 1:
                 self.enter_results(after_load=True)
 
             self.root.mainloop()
@@ -728,6 +746,9 @@ class GUI:
                 self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 self.mmr_labels[i]["text"] = ""
+        for ii in range(i+1,max(self.tur.c13,self.tur.c2)):   #continue loop here one existing labels for a court that is not used / not available at the moment, and delete text
+            self.game_labels[ii]["text"] = ""
+            self.mmr_labels[ii]["text"] = ""
         self.game_but["state"] = tk.DISABLED
         self.result_but["state"] = tk.NORMAL
         self.result_but["text"] = lang.ENTER_RESULT_BUTTON
