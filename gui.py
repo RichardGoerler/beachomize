@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+#TODO: When loading saved turnier to just entered results: announce player names, color code schedule correctly
+#TODO: Implement correct showing of w13/w2 and c13/c2 for different scenarios (where different t intervals are 0 or not)
+#TODO: Insert some graphical division between intervals in schedule
+
 try:
     import Tkinter as tk
 except:
@@ -580,7 +584,7 @@ class GUI:
             self.schedule_labels = []
             for id, tim in enumerate(self.tur.schedule):
                 hour = int(tim/100)
-                minute = tim-hour*100
+                minute = int(tim-hour*100)
                 self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
                 self.schedule_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
@@ -716,7 +720,7 @@ class GUI:
         if self.tur.display_mmr:
             mmr_sorted = self.tur.players.mmr[team_indices]
             mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
-        for i in range(len(team_indices)/2):
+        for i in range(int(len(team_indices)/2)):
             self.pl_labels[team_indices[2*i][0]]["fg"] = self.pl_labels[team_indices[2 * i][1]]["fg"] = "dark green"
             self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
             self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]

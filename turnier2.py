@@ -435,4 +435,4 @@ class Turnier:
     #         self.game_announce_end()
 
     def __getstate__(self):
-        return dict((k, v) for (k, v) in self.__dict__.iteritems() if "gui" not in k)
+        return dict((k, v) for (k, v) in self.__dict__.items() if "gui" not in k)
