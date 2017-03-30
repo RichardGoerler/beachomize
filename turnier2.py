@@ -92,7 +92,8 @@ class Turnier:
                 g[interval - 1] += 1
                 offset = sum(int_list[0:interval])
                 int_progress = progress - offset
-                if int_list[interval] - int_progress < 0 + PRECISION:       #if the next interval was so short, that we already completely used it
+                int_remainder = int_list[interval] - int_progress
+                if round(int_remainder, PRECISION) < 0:       #if the next interval was so short, that we already completely used it
                     interval += 1                                   #switch to the next after that.
         return g
 

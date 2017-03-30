@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 #TODO: optionally provide file for court naming
-#TODO: optionally leave init mmr out in players file, then it is set to 0
 
 try:
     import Tkinter as tk
@@ -22,16 +21,16 @@ import dialog
 import turnier2 as turnier
 import lang
 
-FILENAME = "players.txt"
+FILENAME_PLAYERS = "players.txt"
+FILENAME_COURTS = "courts.txt"
 
 class StatsWindow(dialog.Dialog):
 
 
     def body(self, master):
-        MAXROWS = 13
         sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
-        for u in range(1+int(self.gui.tur.p/MAXROWS)):
+        for u in range(1+int(self.gui.tur.p/self.gui.stats_height)):
             cs = u*(5+int(self.gui.tur.display_mmr))
             tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs, ipadx=self.gui.default_size/4)
             tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs, ipadx=self.gui.default_size/4)
@@ -40,8 +39,8 @@ class StatsWindow(dialog.Dialog):
             if self.gui.tur.display_mmr:
                 tk.Label(master, text=lang.STATS_MMR, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs, ipadx=self.gui.default_size/4)
             tk.Label(master, text=lang.STATS_APPEARANCES+"    ", font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=4+cs+int(self.gui.tur.display_mmr), ipadx=self.gui.default_size/4)
-            for ip, pl in enumerate(stats_sorted[u*MAXROWS:]):
-                if ip == MAXROWS:
+            for ip, pl in enumerate(stats_sorted[u*self.gui.stats_height:]):
+                if ip == self.gui.stats_height:
                     break
                 game_sub = 0
                 if pl.index == 0:
@@ -409,6 +408,17 @@ class SettingsWindow(dialog.Dialog):
         self.default_size_spin.delete(0, "end")
         self.default_size_spin.insert(0, int(np.round(self.gui.default_size/self.gui.hdfactor)))
         self.default_size_spin.grid(row=1, column=1)
+        tk.Label(master, text=lang.SETTINGS_TABLE_HEIGHT, bg="#EDEEF3").grid(row=2, column=0, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
+        self.table_height_spin = tk.Spinbox(master, width=5, from_=5, to=20, bg="#EDEEF3")
+        self.table_height_spin.delete(0, "end")
+        self.table_height_spin.insert(0, self.gui.table_height)
+        self.table_height_spin.grid(row=2, column=1)
+        tk.Label(master, text=lang.SETTINGS_STATS_HEIGHT, bg="#EDEEF3").grid(row=3, column=0, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
+        self.stats_height_spin = tk.Spinbox(master, width=5, from_=5, to=20, bg="#EDEEF3")
+        self.stats_height_spin.delete(0, "end")
+        self.stats_height_spin.insert(0, self.gui.stats_height)
+        self.stats_height_spin.grid(row=3, column=1)
+        tk.Label(master, text=lang.SETTINGS_HEIGHT_INFO, bg="#EDEEF3", fg="red").grid(row=4, columnspan=2, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
         return self.default_size_spin
 
     def cmd(self, event=None):
@@ -416,13 +426,29 @@ class SettingsWindow(dialog.Dialog):
 
     def check_value(self):
         try:
-            self.val = int(self.default_size_spin.get())
+            self.fontval = int(self.default_size_spin.get())
         except:
-            self.val = self.gui.default_size
-        if not self.val > 4 and self.val < 31:
-            self.val = self.gui.default_size
+            self.fontval = self.gui.default_size
+        if not self.fontval > 4 and self.fontval < 31:
+            self.fontval = self.gui.default_size
         self.default_size_spin.delete(0, "end")
-        self.default_size_spin.insert(0, self.val)
+        self.default_size_spin.insert(0, self.fontval)
+        try:
+            self.tableval = int(self.table_height_spin.get())
+        except:
+            self.tableval = self.gui.table_height
+        if not self.tableval > 4 and self.tableval < 21:
+            self.tableval = self.gui.table_height
+        self.table_height_spin.delete(0, "end")
+        self.table_height_spin.insert(0, self.tableval)
+        try:
+            self.statsval = int(self.stats_height_spin.get())
+        except:
+            self.statsval = self.gui.stats_height
+        if not self.statsval > 4 and self.statsval < 21:
+            self.statsval = self.gui.stats_height
+        self.stats_height_spin.delete(0, "end")
+        self.stats_height_spin.insert(0, self.statsval)
 
     def update_gui(self, val, main=True, this=True):
         if val > 4 and val < 31:
@@ -470,12 +496,16 @@ class SettingsWindow(dialog.Dialog):
 
     def preview(self):
         self.check_value()
-        self.update_gui(int(np.round(self.val*self.gui.hdfactor)))
+        self.update_gui(int(np.round(self.fontval * self.gui.hdfactor)))
 
     def apply(self):
         self.check_value()
-        self.gui.default_size = int(np.round(self.val*self.gui.hdfactor))
-        np.save(".setting.npy", int(np.round(self.val*self.gui.hdfactor)))
+        self.gui.default_size = int(np.round(self.fontval * self.gui.hdfactor))
+        self.gui.table_height = self.tableval
+        self.gui.stats_height = self.statsval
+        np.save(".font.npy", self.gui.default_size)
+        np.save(".table.npy", self.gui.table_height)
+        np.save(".stats.npy", self.gui.stats_height)
 
     def cancel(self, event=None):
         self.update_gui(self.gui.default_size, this=False)
@@ -514,9 +544,17 @@ class GUI:
         self.screen_resolution = [self.screenwidth, self.screenheight]
         self.hdfactor = self.screenheight/1080.
         try:
-            self.default_size = np.load(".setting.npy")
+            self.default_size = np.load(".font.npy")
         except:
             self.default_size = int(np.round(15*self.hdfactor))
+        try:
+            self.table_height = np.load(".table.npy")
+        except:
+            self.table_height = 10
+        try:
+            self.stats_height = np.load(".stats.npy")
+        except:
+            self.stats_height = 10
         self.default_font = tkFont.nametofont("TkDefaultFont")
         self.default_font.configure(size=self.default_size)
         self.text_font = tkFont.nametofont("TkTextFont")
@@ -566,8 +604,6 @@ class GUI:
                 clock.after(200, tick)
             tick()
 
-            MAXROWS = 13
-
             #player list
             tk.Label(self.root, text=lang.PLAYER_LIST_TITLE, font=self.big_bold_font, bg="#EDEEF3").grid(row=2,column=0, pady=self.default_size)
             self.pl_table=tk.Frame(self.root, bg="#EDEEF3")
@@ -575,7 +611,7 @@ class GUI:
             for id, nam in enumerate(self.tur.players.name):
                 self.pl_labels.append(tk.Label(self.pl_table, text=nam, bg="#EDEEF3"))
                 self.pl_labels[id].bind("<Button-1>", lambda event, pid = id: self.toggle_wait(pid))
-                self.pl_labels[id].grid(row=id%MAXROWS, column=int(id/MAXROWS), ipadx = int(self.default_size/2))
+                self.pl_labels[id].grid(row=id%self.table_height, column=int(id/self.table_height), ipadx = int(self.default_size/2))
             self.pl_table.grid(row=3,column=0)
 
             #schedule
@@ -590,12 +626,12 @@ class GUI:
             offs = 0
             for id, tim in enumerate(self.tur.schedule):
                 if id == g_cum_nonzero[offs]:
-                    tk.Label(self.schedule_table, text="", bg="#EDEEF3").grid(row=(id+offs)%MAXROWS, column=int((id+offs)/MAXROWS), ipadx = int(self.default_size/2))
+                    tk.Label(self.schedule_table, text="", bg="#EDEEF3").grid(row=(id+offs)%self.table_height, column=int((id+offs)/self.table_height), ipadx = int(self.default_size/2))
                     offs += 1
                 hour = int(tim/100)
                 minute = int(tim-hour*100)
                 self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
-                self.schedule_labels[id].grid(row=(id+offs)%MAXROWS, column=int((id+offs)/MAXROWS), ipadx = int(self.default_size/2))
+                self.schedule_labels[id].grid(row=(id+offs)%self.table_height, column=int((id+offs)/self.table_height), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)
 
@@ -604,11 +640,9 @@ class GUI:
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
             self.game_labels = []
             self.mmr_labels = []
+            court_names = self.in_court_names()
             for ci in range(max(self.tur.c13, self.tur.c2)):
-                if ci == 0:
-                    tk.Label(self.game_table, text=lang.CENTER_COURT_NAME, font=self.bold_font, bg="#EDEEF3").pack()
-                else:
-                    tk.Label(self.game_table, text=lang.COURT_NAMES.format(ci), font=self.bold_font, bg="#EDEEF3").pack()
+                tk.Label(self.game_table, text=court_names[ci], font=self.bold_font, bg="#EDEEF3").pack()
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
                 self.game_labels[ci].pack()
                 self.mmr_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
@@ -690,7 +724,7 @@ class GUI:
         return self.game_count.get()
 
     def in_players(self):
-        filename = FILENAME
+        filename = FILENAME_PLAYERS
         with open(filename) as f:
             filecontent = f.readlines()
         names = []
@@ -698,8 +732,32 @@ class GUI:
         for st in filecontent:
             spl = st.split()
             names.append(spl[0])
-            init_mmr.append(int(spl[1]))
+            if len(spl) > 1:
+                init_mmr.append(int(spl[1]))
+            else:
+                init_mmr.append(0)
         return names, init_mmr
+
+    def in_court_names(self):
+        filename = FILENAME_COURTS
+        max_c = max(self.tur.c13, self.tur.c2)
+        try:
+            with open(filename) as f:
+                filecontent = f.readlines()
+            if len(filecontent) < max_c:
+                raise Exception()
+            cnames = []
+            for nam in filecontent:    #remove newline and add colon if necessary
+                if nam[-1] == "\n":
+                    nam = nam[:-1]
+                if not nam[-1] == ":":
+                    nam += ":"
+                cnames.append(nam)
+        except:
+            cnames = [lang.CENTER_COURT_NAME]
+            for i in range(1, max_c):
+                cnames.append(lang.COURT_NAMES.format(i))
+        return cnames
 
     def toggle_wait(self, pl_id):
         if self.game_but["state"] == tk.DISABLED or self.tur.i == self.tur.g:

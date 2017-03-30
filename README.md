@@ -17,7 +17,7 @@ Features
 ### Customize your tournament
 ![welcome](http://beachomize.de/image/welcome.png)
 
-Set number of courts, time and duration, and matchmaking method.
+Set number of courts, time and duration, and matchmaking method. For the case that not all courts are available all the time, three time intervals with two different court counts can be defined.
 ### Handle any number of players (odd / prime)
 ![game_number](http://beachomize.de/image/game_number.png)
 
@@ -28,7 +28,7 @@ Get suggestions for number of games to play. Adjust the game number by letting p
 Usually the players that wait are randomly determined each round, but players can also request to skip a round.
 ### Non-repeating team compositions
 As long as it is possible, no player will have the same teammate twice.
-### Adjust font size
+### Adjust appearance
 ![settings](http://beachomize.de/image/settings.png)
 ### Auto-save
 The state of the tournament is automatically saved on the hard drive to avoid data loss, for example when the window is closed accidentially. The most recent auto-save can be loaded on start-up.
@@ -49,7 +49,8 @@ On Windows, *Anaconda* is usually the way to run python. You can download the wi
 
 Usage
 -----
-Before starting your tournament, make sure you place you player names in the file *players.txt*. Each line should consist of a player name and the initial MMR of that player (default 0).
+Before starting your tournament, make sure you place you player names in the file *players.txt*. Each line should consist of a player name and the initial MMR of that player (default 0).  
+You can also customize the court names and sorting by editing the file *courts.txt*. Delete the file to use default numbering.
 
 In your anaconda or linux console, navigate to the **beachomize** directory and type **python gui&#46;py**
 
@@ -57,6 +58,5 @@ To change the language, edit the file *\__init\__.py* in the *lang*-directory. R
 
 Contact
 -------
-Richard Görler, Hattingen, Germany
-
+Richard Görler, Hattingen, Germany  
 richard.goerler[at]gmail&#46;com
