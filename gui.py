@@ -753,11 +753,10 @@ class GUI:
                 raise Exception()
             cnames = []
             for nam in filecontent:    #remove newline and add colon if necessary
-                if nam[-1] == "\n":
-                    nam = nam[:-1]
-                if not nam[-1] == ":":
-                    nam += ":"
-                cnames.append(nam)
+                nams = nam.rstrip()
+                if not nams[-1] == ":":
+                    nams += ":"
+                cnames.append(nams)
         except:
             cnames = [lang.CENTER_COURT_NAME]
             for i in range(1, max_c):

@@ -65,7 +65,7 @@ class Turnier:
             i += 1
 
     def games_intervalwise(self, games):
-        PRECISION = 2
+        PRECISION = 5
         if self.t2 == 1.:
             return [0,games,0]
         step = 1./games
@@ -85,7 +85,7 @@ class Turnier:
             elif out_long == out or round(int_remainder, PRECISION) == round(step, PRECISION):  #if the game would overlap into (and that is allowed by out_long) or fit exactly into the next interval
                 g[interval - 1] += 1                            #then add the game to the interval and switch to the next interval
                 interval += 1
-                if round(int_list[interval], PRECISION) < round(step, PRECISION):  #but if this interval is too short to fit an entire game, switch to the next after that
+                if interval < 3 and round(int_list[interval], PRECISION) < round(step, PRECISION):  #but if this interval is too short to fit an entire game, switch to the next after that
                     interval += 1
             else:                                          #if the current interval is not able to overlap (but the next)
                 interval += 1                                   #switch to the next interval and add the game to that one
