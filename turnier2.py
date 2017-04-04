@@ -137,7 +137,7 @@ class Turnier:
         self.players["mmr"] = self.init_mmr
         self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag_w"] = self.players["mmr_tag_l"] = [0]*self.p
         self.players_copy = None
-        self.partner_matrix = np.zeros((self.p, self.p))
+        self.partner_matrix = np.eye(self.p)
         self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False). If True, different methods apply (see constants)
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
@@ -258,13 +258,14 @@ class Turnier:
 
         # MAKING TEAMS (NEW METHOD)
         if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
-            self.partner_matrix = np.zeros((self.p, self.p))
+            self.partner_matrix = np.eye(self.p)
             ret = 1
         teams_ready = False
         while not teams_ready:
             playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
             playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
             team_indices = []
+            teams_ready = True
             for ti in range(2*self.c):  # ti = team index
                 counts = np.array([len(row)-np.count_nonzero(row) for row in playing_partner_matrix])
                 lexsort_ind = np.lexsort((np.random.rand(len(counts)), counts))
@@ -279,8 +280,9 @@ class Turnier:
                 # get indices of still zero entries and select one at random
                 zero_entries_indices = np.where(player_row == 0)[0]
                 if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
-                    self.partner_matrix = np.zeros((self.p, self.p))
+                    self.partner_matrix = np.eye(self.p)
                     ret = 2
+                    teams_ready = False
                     break
                 choice = np.random.choice(zero_entries_indices)
                 # get partner for pl
@@ -296,7 +298,6 @@ class Turnier:
                 playing_this_turn = np.delete(playing_this_turn, choice)
                 # add team to teams list
                 team_indices.append([pl, par])
-            teams_ready = True
         team_indices = np.array(team_indices)
         teams = self.players[team_indices]
 

@@ -595,7 +595,7 @@ class GUI:
 
             #clock
             clock = tk.Label(self.root, font=self.clock_font, bg="#EDEEF3")
-            clock.grid(row=1, column=1, padx=self.default_size, pady=self.default_size)
+            clock.grid(row=1, columnspan=3, padx=self.default_size, pady=self.default_size)
             def tick():
                 s = time.strftime(lang.CLOCK_FORMAT)
                 if s != clock["text"]:
@@ -729,6 +729,14 @@ class GUI:
         return self.game_count.get()
 
     def in_players(self):
+        def isfloat(x):
+            try:
+                a = float(x)
+            except ValueError:
+                return False
+            else:
+                return True
+
         filename = FILENAME_PLAYERS
         with open(filename) as f:
             filecontent = f.readlines()
@@ -736,11 +744,12 @@ class GUI:
         init_mmr = []
         for st in filecontent:
             spl = st.split()
-            names.append(spl[0])
-            if len(spl) > 1:
-                init_mmr.append(int(spl[1]))
+            if len(spl) > 1 and isfloat(spl[-1]):
+                init_mmr.append(float(spl[-1]))
+                names.append(" ".join(spl[:-1]))
             else:
                 init_mmr.append(0)
+                names.append(" ".join(spl))
         return names, init_mmr
 
     def in_court_names(self):
