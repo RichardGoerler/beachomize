@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#TODO: optionally provide file for court naming
-
 try:
     import Tkinter as tk
 except:
@@ -173,7 +171,7 @@ class ResultsWindow(dialog.Dialog):
                     try:
                         set_res.append(int(self.spinboxes[ci][si][ii].get()))
                     except Exception:
-                        tkMessageBox.showwarning(lang.ERROR_TITLE, lang.ERROR_INVALID_INPUT)
+                        tkMessageBox.showwarning(lang.ERROR_TITLE, lang.ERROR_INVALID_INPUT, parent=self)
                         self.spinboxes[ci][si][ii].selection_adjust("end")
                         self.initial_focus = self.spinboxes[ci][si][ii]
                         return 0
@@ -333,7 +331,7 @@ class WelcomeWindow(dialog.Dialog):
         try:
             self.gui.tur = turnier.load(self.gui)
         except IOError:
-            tkMessageBox.showwarning(lang.ERROR_TITLE, lang.WELCOME_NO_SAVED_FILE)
+            tkMessageBox.showwarning(lang.ERROR_TITLE, lang.WELCOME_NO_SAVED_FILE, parent=self)
             return 0
         return 1
 
@@ -421,7 +419,7 @@ class SettingsWindow(dialog.Dialog):
         return self.default_size_spin
 
     def cmd(self, event=None):
-        _ = CommandWindow(self.master, self.gui, title=lang.COMMAND_LINE_TITLE)
+        _ = CommandWindow(self, self.gui, title=lang.COMMAND_LINE_TITLE)
 
     def check_value(self):
         try:
@@ -518,9 +516,9 @@ class CommandWindow(dialog.Dialog):
 
     def body(self, master):
         self.cm = tk.StringVar()
-        e = tk.Entry(master, textvariable=self.cm, bg="#EDEEF3")
-        e.pack()
-        return e
+        self.ent = tk.Entry(master, textvariable=self.cm, bg="#EDEEF3")
+        self.ent.pack()
+        return self.ent
 
     def validate(self):
         try:
@@ -530,7 +528,8 @@ class CommandWindow(dialog.Dialog):
                 exec(self.cm.get())
             except:
                 print(e)
-                tkMessageBox.showwarning(lang.ERROR_TITLE, lang.COMMAND_LINE_ERROR)
+                tkMessageBox.showwarning(lang.ERROR_TITLE, lang.COMMAND_LINE_ERROR, parent=self)
+                self.ent.selection_adjust("end")
                 return 0
         return 1
 
