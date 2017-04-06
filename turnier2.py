@@ -158,6 +158,8 @@ class Turnier:
             self.w13 = self.p-self.a13
         if self.t2 == 0:
             self.c2 = self.c13
+        elif self.t1 == 0 and self.t3 == 0:
+            self.c13 = self.c2
         if self.c2 == self.c13:
             self.t1 = self.t3 = 0.
             self.t2 = 1.
@@ -261,6 +263,7 @@ class Turnier:
             self.partner_matrix = np.eye(self.p)
             ret = 1
         teams_ready = False
+        tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
         while not teams_ready:
             playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
             playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
@@ -280,8 +283,11 @@ class Turnier:
                 # get indices of still zero entries and select one at random
                 zero_entries_indices = np.where(player_row == 0)[0]
                 if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
-                    self.partner_matrix = np.eye(self.p)
-                    ret = 2
+                    if tries == 0:
+                        self.partner_matrix = np.eye(self.p)
+                        ret = 2
+                    else:
+                        tries -= 1
                     teams_ready = False
                     break
                 choice = np.random.choice(zero_entries_indices)

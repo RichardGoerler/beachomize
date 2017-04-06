@@ -641,10 +641,10 @@ class GUI:
             court_names = self.in_court_names()
             cmax = max(self.tur.c13, self.tur.c2)
             h1 = max(int(cmax/2),1)
-            h2 = cmax-h1
+            #h2 = cmax-h1
             col = 0
             for ci in range(max(self.tur.c13, self.tur.c2)):
-                if ci == h1:
+                if ci == h1 and not cmax < int(self.table_height/3)+1:   #if court list would be higher than table to the left, split in two columns
                     col = 1
                 tk.Label(self.game_table, text=court_names[ci], font=self.bold_font, bg="#EDEEF3").grid(row=3*(ci-h1*col), column=col, ipadx = int(self.default_size/2))
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
