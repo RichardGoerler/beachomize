@@ -82,10 +82,7 @@ class ResultsWindow(dialog.Dialog):
         self.spinboxes = []
         self.placeholders = []
         for ci in range(self.gui.tur.c):
-            if ci == 0:
-                tk.Label(master, text=lang.CENTER_COURT_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0)
-            else:
-                tk.Label(master, text=lang.COURT_NAMES.format(ci), font=self.gui.bold_font, bg="#EDEEF3").grid(row=2*ci, column=0)
+            tk.Label(master, text=self.gui.court_names[ci], font=self.gui.bold_font, bg="#EDEEF3").grid(row=2*ci, column=0)
             self.game_labels.append(tk.Label(master, text=names_sorted[2 * ci][0] + "/" + names_sorted[2 * ci][1] + " - " + names_sorted[2 * ci + 1][0] + "/" + names_sorted[2 * ci + 1][1], bg="#EDEEF3"))
             self.game_labels[ci].grid(row=2*ci+1, column=0, padx=self.gui.default_size)
             self.spinboxes.append([])
@@ -638,7 +635,7 @@ class GUI:
             self.game_table = tk.Frame(self.root, bg="#EDEEF3")
             self.game_labels = []
             self.mmr_labels = []
-            court_names = self.in_court_names()
+            self.court_names = self.in_court_names()
             cmax = max(self.tur.c13, self.tur.c2)
             h1 = max(int(cmax/2),1)
             #h2 = cmax-h1
@@ -646,7 +643,7 @@ class GUI:
             for ci in range(max(self.tur.c13, self.tur.c2)):
                 if ci == h1 and not cmax < int(self.table_height/3)+1:   #if court list would be higher than table to the left, split in two columns
                     col = 1
-                tk.Label(self.game_table, text=court_names[ci], font=self.bold_font, bg="#EDEEF3").grid(row=3*(ci-h1*col), column=col, ipadx = int(self.default_size/2))
+                tk.Label(self.game_table, text=self.court_names[ci], font=self.bold_font, bg="#EDEEF3").grid(row=3*(ci-h1*col), column=col, ipadx = int(self.default_size/2))
                 self.game_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
                 self.game_labels[ci].grid(row=3*(ci-h1*col)+1, column=col, ipadx = int(self.default_size/2))
                 self.mmr_labels.append(tk.Label(self.game_table, text="", bg="#EDEEF3"))
