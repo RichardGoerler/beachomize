@@ -27,7 +27,7 @@ class StatsWindow(dialog.Dialog):
     def body(self, master):
         sort_indices = np.lexsort((-self.gui.tur.players.points, -self.gui.tur.players.diff, -self.gui.tur.players.score))
         stats_sorted = self.gui.tur.players[sort_indices]
-        for u in range(1+int(self.gui.tur.p/self.gui.stats_height)):
+        for u in range(1+int(self.gui.tur.p/self.gui.stats_height)- int(not bool(self.gui.tur.p % self.gui.stats_height))):
             cs = u*(5+int(self.gui.tur.display_mmr))
             tk.Label(master, text=lang.STATS_NAME, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=0+cs, ipadx=int(self.gui.default_size/4))
             tk.Label(master, text=lang.STATS_SCORE, font=self.gui.bold_font, bg="#EDEEF3").grid(row=0, column=1+cs, ipadx=int(self.gui.default_size/4))
