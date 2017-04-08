@@ -1,5 +1,3 @@
-[Official Website](http://beachomize.de)
-========================================
 beachomize
 ==========
 Software for organizing shuffled beach volleyball tournaments with a matchmaking algorithm. Implemented in python and tkinter.
