@@ -130,12 +130,13 @@ class Turnier:
         self.t2 = t2
         self.t3 = t3
         self.p = len(names)
-        dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('mmr_tag_w', int), ('mmr_tag_l', int)])
+        dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('wait_prob', int), ('mmr_tag_w', int), ('mmr_tag_l', int)])
         self.players = np.recarray(self.p, dtype=dt)
         self.players["index"] = np.arange(self.p)
         self.players["name"] = names
         self.players["mmr"] = self.init_mmr
         self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag_w"] = self.players["mmr_tag_l"] = [0]*self.p
+        self.players["wait_prob"] = [3]*self.p
         self.players_copy = None
         self.partner_matrix = np.eye(self.p)
         self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False). If True, different methods apply (see constants)
@@ -243,13 +244,22 @@ class Turnier:
         min_wait = np.min(self.players.wait[noreq])
         min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], noreq)
         if not len(min_indices) < wdif:
-            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False)))
+            wait_prob = self.players.wait_prob[min_indices]
+            probs = wait_prob.astype(float) / np.sum(wait_prob)
+            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
         else:
             waiting_this_turn = np.concatenate((waiting_this_turn, min_indices))
             other_indices = np.setdiff1d(self.players.index[noreq], min_indices)
+            wait_prob = self.players.wait_prob[other_indices]
+            probs = wait_prob.astype(float) / np.sum(wait_prob)
             waiting_this_turn = np.concatenate(
-                (waiting_this_turn, np.random.choice(other_indices, wdif - len(min_indices), replace=False)))
+                (waiting_this_turn, np.random.choice(other_indices, wdif - len(min_indices), replace=False, p=probs)))
         self.players.wait[waiting_this_turn] += 1
+        #update waiting probabilities: reduce for players that waited, increase for players that played.
+        playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)
+        self.players.wait_prob[waiting_this_turn] -= 1
+        self.players.wait_prob[playing_this_turn] += 1
+        self.players["wait_prob"] = np.clip(self.players.wait_prob, 1, 3)
 
         # MAKING TEAMS (OLD METHOD)
         # playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)    # all that are not waiting
