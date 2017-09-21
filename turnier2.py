@@ -121,7 +121,7 @@ class Turnier:
 
 
 
-    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3):
+    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
@@ -143,10 +143,11 @@ class Turnier:
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
         self.orgatime = orgatime
+        self.teamsize = teamsize
         self.c2 = courts    #courts during middle interval
         self.c13 = courts13   #courts during outer intervals
-        self.a2 = self.c2*4
-        self.a13 = self.c13 * 4
+        self.a2 = self.c2*2*self.teamsize
+        self.a13 = self.c13 * 2*self.teamsize
         self.w2 = self.p-self.a2
         self.w13 = self.p - self.a13
         while self.w2 < 0:
@@ -268,53 +269,57 @@ class Turnier:
         # team_indices = np.array([[a, b] for a, b in zip(playing_this_turn[::2], playing_this_turn[1::2])])
         # teams = self.players[team_indices]
 
-        # MAKING TEAMS (NEW METHOD)
-        if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
-            self.partner_matrix = np.eye(self.p)
-            ret = 1
-        teams_ready = False
-        tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
-        while not teams_ready:
+        # MAKING TEAMS (NEW METHOD) playing partner matrix is used for teamsize 2. Otherwise teams are unconstrained random.
+        if self.teamsize == 2:
+            if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
+                self.partner_matrix = np.eye(self.p)
+                ret = 1
+            teams_ready = False
+            tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
+            while not teams_ready:
+                playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
+                playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
+                team_indices = []
+                teams_ready = True
+                for ti in range(2*self.c):  # ti = team index
+                    counts = np.array([len(row)-np.count_nonzero(row) for row in playing_partner_matrix])
+                    lexsort_ind = np.lexsort((np.random.rand(len(counts)), counts))
+                    # choose player with fewest matching possibilities
+                    pid = lexsort_ind[0]
+                    pl = playing_this_turn[pid]
+                    # delete pl's column from temp matrix and delete pl from playing_this_turn
+                    playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=1)
+                    playing_this_turn = np.delete(playing_this_turn, pid)
+                    # get player's row from matrix
+                    player_row = playing_partner_matrix[pid, :]
+                    # get indices of still zero entries and select one at random
+                    zero_entries_indices = np.where(player_row == 0)[0]
+                    if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
+                        if tries == 0:
+                            self.partner_matrix = np.eye(self.p)
+                            ret = 2
+                        else:
+                            tries -= 1
+                        teams_ready = False
+                        break
+                    choice = np.random.choice(zero_entries_indices)
+                    # get partner for pl
+                    par = playing_this_turn[choice]
+                    # set corresponding indices in partner_matrix to 1
+                    self.partner_matrix[pl, par] = 1
+                    self.partner_matrix[par, pl] = 1
+                    # now delete also pl's row from temp matrix
+                    playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=0)
+                    # and delete par's row and column and delete par from playing_this_turn
+                    playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=0)
+                    playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=1)
+                    playing_this_turn = np.delete(playing_this_turn, choice)
+                    # add team to teams list
+                    team_indices.append([pl, par])
+            team_indices = np.array(team_indices)
+        else:
             playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
-            playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
-            team_indices = []
-            teams_ready = True
-            for ti in range(2*self.c):  # ti = team index
-                counts = np.array([len(row)-np.count_nonzero(row) for row in playing_partner_matrix])
-                lexsort_ind = np.lexsort((np.random.rand(len(counts)), counts))
-                # choose player with fewest matching possibilities
-                pid = lexsort_ind[0]
-                pl = playing_this_turn[pid]
-                # delete pl's column from temp matrix and delete pl from playing_this_turn
-                playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=1)
-                playing_this_turn = np.delete(playing_this_turn, pid)
-                # get player's row from matrix
-                player_row = playing_partner_matrix[pid, :]
-                # get indices of still zero entries and select one at random
-                zero_entries_indices = np.where(player_row == 0)[0]
-                if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
-                    if tries == 0:
-                        self.partner_matrix = np.eye(self.p)
-                        ret = 2
-                    else:
-                        tries -= 1
-                    teams_ready = False
-                    break
-                choice = np.random.choice(zero_entries_indices)
-                # get partner for pl
-                par = playing_this_turn[choice]
-                # set corresponding indices in partner_matrix to 1
-                self.partner_matrix[pl, par] = 1
-                self.partner_matrix[par, pl] = 1
-                # now delete also pl's row from temp matrix
-                playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=0)
-                # and delete par's row and column and delete par from playing_this_turn
-                playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=0)
-                playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=1)
-                playing_this_turn = np.delete(playing_this_turn, choice)
-                # add team to teams list
-                team_indices.append([pl, par])
-        team_indices = np.array(team_indices)
+            team_indices = np.random.permutation(playing_this_turn).reshape((2*self.c, self.teamsize))
         teams = self.players[team_indices]
 
         # MATCHMAKING
@@ -362,51 +367,38 @@ class Turnier:
                 scorediff = score1-score2
                 cumdiff += scorediff
 
-                # generate index 0: lost, 1: draw, 2: won. index default score array with that index
-                self.players[team_indices_sorted[2 * ci, 0]].score += [0, 0, 1][np.sign(scorediff) + 1]
-                self.players[team_indices_sorted[2 * ci, 1]].score += [0, 0, 1][np.sign(scorediff) + 1]
-                self.players[team_indices_sorted[2 * ci + 1, 0]].score += [0, 0, 1][np.sign(-scorediff) + 1]
-                self.players[team_indices_sorted[2 * ci + 1, 1]].score += [0, 0, 1][np.sign(-scorediff) + 1]
+                for pi in range(self.teamsize):
+                    # generate index 0: lost, 1: draw, 2: won. index default score array with that index
+                    self.players[team_indices_sorted[2 * ci, pi]].score += [0, 0, 1][np.sign(scorediff) + 1]
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].score += [0, 0, 1][np.sign(-scorediff) + 1]
 
-                # difference is from the POV of team 1, so positive if team 1 won
-                self.players[team_indices_sorted[2 * ci, 0]].diff += scorediff
-                self.players[team_indices_sorted[2 * ci, 1]].diff += scorediff
-                self.players[team_indices_sorted[2 * ci + 1, 0]].diff -= scorediff
-                self.players[team_indices_sorted[2 * ci + 1, 1]].diff -= scorediff
+                    # difference is from the POV of team 1, so positive if team 1 won
+                    self.players[team_indices_sorted[2 * ci, pi]].diff += scorediff
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].diff -= scorediff
 
-                self.players[team_indices_sorted[2 * ci, 0]].points += score1
-                self.players[team_indices_sorted[2 * ci, 1]].points += score1
-                self.players[team_indices_sorted[2 * ci + 1, 0]].points += score2
-                self.players[team_indices_sorted[2 * ci + 1, 1]].points += score2
+                    self.players[team_indices_sorted[2 * ci, pi]].points += score1
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].points += score2
 
-                if self.matchmaking == MMR_DIFF_STREAK:
-                    # according to mmr_tags scorediff is multiplied with 0.3, 0.6 or 1. When on winning/losing streak, game outcomes are more strongly weighted
-                    # this is intended to decrease the influence of random fluctuations in performance
-                    self.players[team_indices_sorted[2 * ci, 0]].mmr += scorediff*[0.3, 0.6, 1][pl[0,0].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,0].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci, 1]].mmr += scorediff*[0.3, 0.6, 1][pl[0,1].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,1].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,0].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,0].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,1].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,1].mmr_tag_l]
+                    if self.matchmaking == MMR_DIFF_STREAK:
+                        # according to mmr_tags scorediff is multiplied with 0.3, 0.6 or 1. When on winning/losing streak, game outcomes are more strongly weighted
+                        # this is intended to decrease the influence of random fluctuations in performance
+                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_l]
+                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_l]
 
-                if self.matchmaking == MMR_FLAT_STREAK:
-                    #same as diff streak, but is multiplied with one, irrespective of points dfference
-                    self.players[team_indices_sorted[2 * ci, 0]].mmr += [0.3, 0.6, 1][pl[0, 0].mmr_tag_w] if scorediff > 0 else [-0.3, -0.6, -1][pl[0, 0].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci, 1]].mmr += [0.3, 0.6, 1][pl[0, 1].mmr_tag_w] if scorediff > 0 else [-0.3, -0.6, -1][pl[0, 1].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= [0.3, 0.6, 1][pl[1, 0].mmr_tag_w] if scorediff < 0 else [-0.3, -0.6, -1][pl[1, 0].mmr_tag_l]
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= [0.3, 0.6, 1][pl[1, 1].mmr_tag_w] if scorediff < 0 else [-0.3, -0.6, -1][pl[1, 1].mmr_tag_l]
+                    if self.matchmaking == MMR_FLAT_STREAK:
+                        #same as diff streak, but is multiplied with one, irrespective of points dfference
+                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [0.3, 0.6, 1][pl[0, pi].mmr_tag_w] if scorediff > 0 else [-0.3, -0.6, -1][pl[0, pi].mmr_tag_l]
+                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= [0.3, 0.6, 1][pl[1, pi].mmr_tag_w] if scorediff < 0 else [-0.3, -0.6, -1][pl[1, pi].mmr_tag_l]
 
-                if self.matchmaking == MMR_DIFF:
-                    #mmr is the same as points difference
-                    self.players[team_indices_sorted[2 * ci, 0]].mmr += scorediff
-                    self.players[team_indices_sorted[2 * ci, 1]].mmr += scorediff
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].mmr -= scorediff
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].mmr -= scorediff
+                    if self.matchmaking == MMR_DIFF:
+                        #mmr is the same as points difference
+                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff
+                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff
 
-                if self.matchmaking == MMR_FLAT:
-                    # generate index 0: lost, 1: draw, 2: won. index mmr array with that in a way that lose means -1, draw means 0 and win means +1
-                    self.players[team_indices_sorted[2 * ci, 0]].mmr += [-1, 0, 1][np.sign(scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci, 1]].mmr += [-1, 0, 1][np.sign(scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci + 1, 0]].mmr += [-1, 0, 1][np.sign(-scorediff) + 1]
-                    self.players[team_indices_sorted[2 * ci + 1, 1]].mmr += [-1, 0, 1][np.sign(-scorediff) + 1]
+                    if self.matchmaking == MMR_FLAT:
+                        # generate index 0: lost, 1: draw, 2: won. index mmr array with that in a way that lose means -1, draw means 0 and win means +1
+                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [-1, 0, 1][np.sign(scorediff) + 1]
+                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += [-1, 0, 1][np.sign(-scorediff) + 1]
 
                 if self.matchmaking_tag == MMR_TAG_IND:
                     self._update_mmr_tag(ci, team_indices_sorted, scorediff)
@@ -422,18 +414,15 @@ class Turnier:
     def _update_mmr_tag(self, ci, teams, diff):
         # mmr_tag_w keeps track of number of wins {0,1,2} and mmr_tag_l accordingly for losses
         # mmr_tag_w is increased in case of win, mmr_tag_l is decreased and vice versa. In case of tie both are decreased
-        self.players[teams[2 * ci, 0]].mmr_tag_w += 1 if diff > 0 else -1
-        self.players[teams[2 * ci, 1]].mmr_tag_w += 1 if diff > 0 else -1
-        self.players[teams[2 * ci + 1, 0]].mmr_tag_w += 1 if diff < 0 else -1
-        self.players[teams[2 * ci + 1, 1]].mmr_tag_w += 1 if diff < 0 else -1
+        for pli in range(self.teamsize):
+            self.players[teams[2 * ci, pli]].mmr_tag_w += 1 if diff > 0 else -1
+            self.players[teams[2 * ci + 1, pli]].mmr_tag_w += 1 if diff < 0 else -1
 
-        self.players[teams[2 * ci, 0]].mmr_tag_l += 1 if diff < 0 else -1
-        self.players[teams[2 * ci, 1]].mmr_tag_l += 1 if diff < 0 else -1
-        self.players[teams[2 * ci + 1, 0]].mmr_tag_l += 1 if diff > 0 else -1
-        self.players[teams[2 * ci + 1, 1]].mmr_tag_l += 1 if diff > 0 else -1
+            self.players[teams[2 * ci, pli]].mmr_tag_l += 1 if diff < 0 else -1
+            self.players[teams[2 * ci + 1, pli]].mmr_tag_l += 1 if diff > 0 else -1
 
-        for ti in range(0, 2):
-            for pi in range(0, 2):
+        for ti in range(0, 2):     #truncating on interval [0,2]
+            for pi in range(0, self.teamsize):
                 self.players[teams[2 * ci + ti, pi]].mmr_tag_w = min(max(self.players[teams[2 * ci + ti, pi]].mmr_tag_w, 0), 2)
                 self.players[teams[2 * ci + ti, pi]].mmr_tag_l = min(max(self.players[teams[2 * ci + ti, pi]].mmr_tag_l, 0), 2)
 

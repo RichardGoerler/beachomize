@@ -12,7 +12,7 @@ try:
     import tkFont
 except:
     import tkinter.font as tkFont
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk             #TODO: Remove ImageTK and use tkinter.PhotoImage instead of ImageTk.PhotoImage. Should work in python2 also, but not sure.
 import time
 import numpy as np
 import dialog
@@ -83,7 +83,12 @@ class ResultsWindow(dialog.Dialog):
         self.placeholders = []
         for ci in range(self.gui.tur.c):
             tk.Label(master, text=self.gui.court_names[ci], font=self.gui.bold_font, bg="#EDEEF3").grid(row=2*ci, column=0)
-            self.game_labels.append(tk.Label(master, text=names_sorted[2 * ci][0] + "/" + names_sorted[2 * ci][1] + " - " + names_sorted[2 * ci + 1][0] + "/" + names_sorted[2 * ci + 1][1], bg="#EDEEF3"))
+            lbl1 = ""
+            lbl2 = ""
+            for pi in range(self.gui.tur.teamsize):
+                lbl1 += (names_sorted[2 * ci][pi] + "/") if pi < self.gui.tur.teamsize-1 else names_sorted[2 * ci][pi]
+                lbl2 += (names_sorted[2 * ci + 1][pi] + "/") if pi < self.gui.tur.teamsize - 1 else names_sorted[2 * ci + 1][pi]
+            self.game_labels.append(tk.Label(master, text=lbl1 + " - " + lbl2, bg="#EDEEF3"))
             self.game_labels[ci].grid(row=2*ci+1, column=0, padx=self.gui.default_size)
             self.spinboxes.append([])
             self.placeholders.append([])
@@ -182,7 +187,7 @@ class ResultsWindow(dialog.Dialog):
         else:
             self.gui.tur.res(self.res_list)
 
-class WelcomeWindow(dialog.Dialog):
+class WelcomeWindow(dialog.Dialog):   #TODO: Add option to set teamsize
 
     def body(self, master):
         tk.Label(master, text=lang.WELCOME_HEADING, bg="#EDEEF3").pack()
@@ -811,7 +816,12 @@ class GUI:
         for i in range(int(len(team_indices)/2)):
             self.pl_labels[team_indices[2*i][0]]["fg"] = self.pl_labels[team_indices[2 * i][1]]["fg"] = "dark green"
             self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
-            self.game_labels[i]["text"] = names_sorted[2*i][0] + "/" + names_sorted[2*i][1] + " - " + names_sorted[2*i+1][0] + "/" + names_sorted[2*i+1][1]
+            lbl1 = ""
+            lbl2 = ""
+            for pi in range(self.tur.teamsize):
+                lbl1 += (names_sorted[2 * i][pi] + "/") if pi < self.tur.teamsize-1 else names_sorted[2 * i][pi]
+                lbl2 += (names_sorted[2 * i + 1][pi] + "/") if pi < self.tur.teamsize - 1 else names_sorted[2 * i + 1][pi]
+            self.game_labels[i]["text"] = lbl1 + " - " + lbl2
             if self.tur.display_mmr:
                 self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
@@ -875,7 +885,7 @@ class GUI:
             if self.tur.display_mmr:
                 mmr_sorted = self.tur.players.mmr[team_indices]
                 mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
-                for i in range(len(team_indices) / 2):
+                for i in range(len(team_indices) / 2):     #TODO: Check why it does not work in some python3 versions ("float object cannot be interperted as an integer")
                     self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 for i in range(len(team_indices) / 2):
