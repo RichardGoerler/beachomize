@@ -821,8 +821,9 @@ class GUI:
             mmr_sorted = self.tur.players.mmr[team_indices]
             mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
         for i in range(int(len(team_indices)/2)):
-            self.pl_labels[team_indices[2*i][0]]["fg"] = self.pl_labels[team_indices[2 * i][1]]["fg"] = "dark green"
-            self.pl_labels[team_indices[2 * i+1][0]]["fg"] = self.pl_labels[team_indices[2 * i + 1][1]]["fg"] = "dark green"
+            for pi in range(self.tur.teamsize):
+                self.pl_labels[team_indices[2*i][pi]]["fg"] = "dark green"
+                self.pl_labels[team_indices[2 * i+1][pi]]["fg"] = "dark green"
             lbl1 = ""
             lbl2 = ""
             for pi in range(self.tur.teamsize):

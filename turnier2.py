@@ -154,11 +154,11 @@ class Turnier:
         self.w13 = self.p - self.a13
         while self.w2 < 0:
             self.c2 -= 1
-            self.a2 = self.c2*4
+            self.a2 = self.c2*2*self.teamsize
             self.w2 = self.p-self.a2
         while self.w13 < 0:
             self.c13 -= 1
-            self.a13 = self.c13*4
+            self.a13 = self.c13*2*self.teamsize
             self.w13 = self.p-self.a13
         if self.t2 == 0:
             self.c2 = self.c13
