@@ -113,11 +113,13 @@ class Turnier:
                         wraps += 1
             if self.p == f + 1:  # if one player (player 0) can play a game more to make it work
                 self.playlist.append(gi)
+                self.maxwait_list[gi] = wraps+1
             elif f == 1:  # if one player (player 0) can wait a game more
                 self.waitlist.append(gi)
+                self.maxwait_list[gi] = wraps
             elif f == 0:  # if it works regularly
                 self.goodlist.append(gi)
-            self.maxwait_list[gi] = wraps
+                self.maxwait_list[gi] = wraps
 
 
 

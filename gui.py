@@ -12,7 +12,7 @@ try:
     import tkFont
 except:
     import tkinter.font as tkFont
-from PIL import Image, ImageTk             #TODO: Remove ImageTK and use tkinter.PhotoImage instead of ImageTk.PhotoImage. Should work in python2 also, but not sure.
+from PIL import Image, ImageTk             # PIL.ImageTk officially supports python 2.4-2.7 and 3.2-3.3, but for me it also works on 3.6, on both Windows (anaconda) and Linux.
 import time
 import numpy as np
 import dialog
@@ -187,7 +187,7 @@ class ResultsWindow(dialog.Dialog):
         else:
             self.gui.tur.res(self.res_list)
 
-class WelcomeWindow(dialog.Dialog):   #TODO: Add option to set teamsize
+class WelcomeWindow(dialog.Dialog):
 
     def body(self, master):
         tk.Label(master, text=lang.WELCOME_HEADING, bg="#EDEEF3").pack()
@@ -215,6 +215,13 @@ class WelcomeWindow(dialog.Dialog):   #TODO: Add option to set teamsize
         self.cmenu_outer.config(bg="#EDEEF3")
         self.cmenu_outer["menu"].config(bg="#EDEEF3")
         self.out_show = False
+
+        self.tvar = tk.IntVar()
+        self.tvar.set(2)
+        tk.Label(box, text=lang.WELCOME_TEAMSIZE, bg="#EDEEF3").grid(row=1, column=1, pady=int(self.gui.default_size / 2))
+        self.tmenu = tk.OptionMenu(box, self.tvar, 2, 3, 4, 5, 6)
+        self.tmenu.config(bg="#EDEEF3")
+        self.tmenu.grid(row=2, column=1)
 
         tk.Label(box, text=lang.WELCOME_TIME_DURATION, bg="#EDEEF3").grid(row=3, column=0, pady=int(self.gui.default_size / 2))
         self.time_scale = tk.Scale(box, from_=0, to=23.5, resolution=0.5, orient=tk.HORIZONTAL, showvalue=0, label=lang.TIME_FORMAT.format(21, 0), length=self.gui.default_size * 10,
@@ -359,7 +366,7 @@ class WelcomeWindow(dialog.Dialog):   #TODO: Add option to set teamsize
 
         names, mmr = self.gui.in_players()
         self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), courts13=self.cvar_outer.get(), start_time=starttime, duration=duration, t1=t1, t2=t2, t3=t3,
-                                       matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()))
+                                       matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), teamsize=self.tvar.get())
 
         self.cancel()
 
@@ -885,10 +892,10 @@ class GUI:
             if self.tur.display_mmr:
                 mmr_sorted = self.tur.players.mmr[team_indices]
                 mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
-                for i in range(len(team_indices) / 2):     #TODO: Check why it does not work in some python3 versions ("float object cannot be interperted as an integer")
+                for i in range(len(team_indices) // 2):
                     self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
-                for i in range(len(team_indices) / 2):
+                for i in range(len(team_indices) // 2):
                     self.mmr_labels[i]["text"] = ""
         pass
 
