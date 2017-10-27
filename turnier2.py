@@ -97,7 +97,6 @@ class Turnier:
                     interval += 1                                   #switch to the next after that.
         return g
 
-
     def calc_game_counts2(self, max_g = 20):
         self.maxwait_list = [0]*max_g
         wait_list = [self.w13, self.w2, self.w13]
@@ -123,14 +122,70 @@ class Turnier:
 
 
 
+    def cgc_complete(self, begin=4, end=41):
+        self_cp = dict(self.__dict__)
+        playl = []
+        waitl = []
+        goodl = []
+        for ppp in range(begin,end):
+            self.p = ppp
+            self.waitlist = []
+            self.playlist = []
+            self.goodlist = []
+            self.t1 = self.t1_init
+            self.t2 = self.t2_init
+            self.t3 = self.t3_init
+            self.c2 = self.c2_init
+            self.c13 = self.c13_init
+            self.a2 = self.c2 * 2 * self.teamsize
+            self.a13 = self.c13 * 2 * self.teamsize
+            self.w2 = self.p - self.a2
+            self.w13 = self.p - self.a13
+            while self.w2 < 0:
+                self.c2 -= 1
+                self.a2 = self.c2 * 2 * self.teamsize
+                self.w2 = self.p - self.a2
+            while self.w13 < 0:
+                self.c13 -= 1
+                self.a13 = self.c13 * 2 * self.teamsize
+                self.w13 = self.p - self.a13
+            if self.t2 == 0:
+                self.c2 = self.c13
+            elif self.t1 == 0 and self.t3 == 0:
+                self.c13 = self.c2
+            if self.c2 == self.c13:
+                self.t1 = self.t3 = 0.
+                self.t2 = 1.
+            self.calc_game_counts2()
+            playl.append(self.playlist)
+            waitl.append(self.waitlist)
+            goodl.append(self.goodlist)
+            print("")
+            row_format = "{:>2} | good | " + "{:>2} " * len(self.goodlist)
+            print(row_format.format(ppp, *self.goodlist))
+            row_format = "{:>2} | wait | " + "{:>2} " * len(self.waitlist)
+            print(row_format.format(ppp, *self.waitlist))
+            row_format = "{:>2} | play | " + "{:>2} " * len(self.playlist)
+            print(row_format.format(ppp, *self.playlist))
+        self.p = self_cp['p']
+        self.waitlist = self_cp['waitlist']
+        self.playlist = self_cp['playlist']
+        self.goodlist = self_cp['goodlist']
+        self.t1 = self_cp['t1']
+        self.t2 = self_cp['t2']
+        self.t3 = self_cp['t3']
+        self.c2 = self_cp['c2']
+        self.c13 = self_cp['c13']
+
+
     def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
         #consists of three intervals t1..t2..t3 at max. These numbers are proportions of the total time. t1 and t3 take place the same number of courts.
-        self.t1 = t1
-        self.t2 = t2
-        self.t3 = t3
+        self.t1 = self.t1_init = t1
+        self.t2 = self.t2_init = t2
+        self.t3 = self.t3_init = t3
         self.p = len(names)
         dt = np.dtype([('index', int), ('name', object), ('score', int), ('diff', int), ('points', int), ('mmr', float), ('wait', int), ('wait_prob', int), ('mmr_tag_w', int), ('mmr_tag_l', int)])
         self.players = np.recarray(self.p, dtype=dt)
@@ -146,8 +201,8 @@ class Turnier:
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
         self.orgatime = orgatime
         self.teamsize = teamsize
-        self.c2 = courts    #courts during middle interval
-        self.c13 = courts13   #courts during outer intervals
+        self.c2 = self.c2_init = courts    #courts during middle interval
+        self.c13 = self.c13_init = courts13   #courts during outer intervals
         self.a2 = self.c2*2*self.teamsize
         self.a13 = self.c13 * 2*self.teamsize
         self.w2 = self.p-self.a2
