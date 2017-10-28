@@ -1,4 +1,4 @@
-[Show this readme in English](https://github.com/RichardGoerler/beachomize/blob/master/README.md)
+[README in English](https://github.com/RichardGoerler/beachomize/blob/master/README.md)
 
 beachomize
 ==========
