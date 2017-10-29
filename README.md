@@ -17,7 +17,7 @@ Features
 ### Customize your tournament
 ![welcome](http://beachomize.de/image/welcome2.png)
 
-Set number of courts, time and duration, and matchmaking method. For the case that not all courts are available all the time, three time intervals with two different court counts can be defined.
+Set number of courts, team size, time and duration, and matchmaking method. For the case that not all courts are available all the time, three time intervals with two different court counts can be defined.
 ### Handle any number of players (odd / prime)
 ![game_number](http://beachomize.de/image/game_number.png)
 
