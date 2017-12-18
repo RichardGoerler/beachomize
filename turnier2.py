@@ -119,6 +119,14 @@ class Turnier:
             elif f == 0:  # if it works regularly
                 self.goodlist.append(gi)
                 self.maxwait_list[gi] = wraps
+                good_found = True
+            elif self.p == f + 2:  # player 0 can play 2 games more
+                if wraps > 0:
+                    self.playlist2.append(gi)
+                    self.maxwait_list[gi] = wraps+1
+            elif f == 2:
+                self.waitlist2.append(gi)
+                self.maxwait_list[gi] = wraps
 
 
 
@@ -127,11 +135,15 @@ class Turnier:
         playl = []
         waitl = []
         goodl = []
+        playl2 = []
+        waitl2 = []
         for ppp in range(begin,end):
             self.p = ppp
             self.waitlist = []
             self.playlist = []
             self.goodlist = []
+            self.waitlist2 = []
+            self.playlist2 = []
             self.t1 = self.t1_init
             self.t2 = self.t2_init
             self.t3 = self.t3_init
@@ -160,6 +172,8 @@ class Turnier:
             playl.append(self.playlist)
             waitl.append(self.waitlist)
             goodl.append(self.goodlist)
+            playl2.append(self.playlist2)
+            waitl2.append(self.waitlist2)
             print("")
             row_format = "{:>2} | good | " + "{:>2} " * len(self.goodlist)
             print(row_format.format(ppp, *self.goodlist))
@@ -167,10 +181,16 @@ class Turnier:
             print(row_format.format(ppp, *self.waitlist))
             row_format = "{:>2} | play | " + "{:>2} " * len(self.playlist)
             print(row_format.format(ppp, *self.playlist))
+            row_format = "{:>2} | wai2 | " + "{:>2} " * len(self.waitlist2)
+            print(row_format.format(ppp, *self.waitlist2))
+            row_format = "{:>2} | pla2 | " + "{:>2} " * len(self.playlist2)
+            print(row_format.format(ppp, *self.playlist2))
         self.p = self_cp['p']
         self.waitlist = self_cp['waitlist']
         self.playlist = self_cp['playlist']
         self.goodlist = self_cp['goodlist']
+        self.waitlist2 = self_cp['waitlist2']
+        self.playlist2 = self_cp['playlist2']
         self.t1 = self_cp['t1']
         self.t2 = self_cp['t2']
         self.t3 = self_cp['t3']
@@ -231,6 +251,8 @@ class Turnier:
         self.waitlist = []
         self.playlist = []
         self.goodlist = []
+        self.waitlist2 = []
+        self.playlist2 = []
         self.calc_game_counts2()
         self.g = 0
 
@@ -240,6 +262,10 @@ class Turnier:
             self.rizemode = -1
         elif self.g in self.playlist:
             self.rizemode = 1
+        elif self.g in self.waitlist2:
+            self.rizemode = -2
+        elif self.g in self.playlist2:
+            self.rizemode = 2
         self.players[0].wait = self.rizemode
         self.maxwait = self.maxwait_list[self.g]
         self.appearances = self.g - self.maxwait

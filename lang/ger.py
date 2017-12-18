@@ -55,6 +55,8 @@ GAME_NUMBER_HEADING = "Anzahl zu spielender Spiele wählen."
 RIZEMODE_NORMAL = "Normal:"
 RIZEMODE_PLAY = "{} spielt eins mehr:"
 RIZEMODE_WAIT = "{} wartet eins mehr:"
+RIZEMODE_PLAY2 = "{} spielt zwei mehr:"
+RIZEMODE_WAIT2 = "{} wartet zwei mehr:"
 
 WELCOME_TITLE = "beachomize"
 WELCOME_HEADING = "beachomize - Turniermanager"

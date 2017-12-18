@@ -371,10 +371,12 @@ class WelcomeWindow(dialog.Dialog):
         self.cancel()
 
 class GameNumberWindow(dialog.Dialog):
-    def __init__(self, parent, gui, goodlist, waitlist, playlist, title=lang.GAME_NUMBER_TITLE):
+    def __init__(self, parent, gui, goodlist, waitlist, playlist, waitlist2, playlist2, title=lang.GAME_NUMBER_TITLE):
         self.goodlist = goodlist
         self.waitlist = waitlist
         self.playlist = playlist
+        self.waitlist2 = waitlist2
+        self.playlist2 = playlist2
         dialog.Dialog.__init__(self, parent, gui, title)
 
     def body(self, master):
@@ -393,6 +395,14 @@ class GameNumberWindow(dialog.Dialog):
         for pp, play in enumerate(self.playlist):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(play), variable=self.gui.game_count, value=play, bg="#EDEEF3"))
             buttonlist[-1].grid(row=2, column=1+pp)
+        tk.Label(gridframe, text=lang.RIZEMODE_WAIT2.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=3)
+        for ww2, wait2 in enumerate(self.waitlist2):
+            buttonlist.append(tk.Radiobutton(gridframe, text=str(wait2), variable=self.gui.game_count, value=wait2, bg="#EDEEF3"))
+            buttonlist[-1].grid(row=3, column=1+ww2)
+        tk.Label(gridframe, text=lang.RIZEMODE_PLAY2.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=4)
+        for pp2, play2 in enumerate(self.playlist2):
+            buttonlist.append(tk.Radiobutton(gridframe, text=str(play2), variable=self.gui.game_count, value=play2, bg="#EDEEF3"))
+            buttonlist[-1].grid(row=4, column=1+pp2)
         gridframe.pack()
         return buttonlist[0]
 
@@ -732,7 +742,7 @@ class GUI:
         self.game_count.set(0)
         while self.game_count.get() == 0:
             # self.root.withdraw()
-            self.selector = GameNumberWindow(self.root, self, self.tur.goodlist, self.tur.waitlist, self.tur.playlist)
+            self.selector = GameNumberWindow(self.root, self, self.tur.goodlist, self.tur.waitlist, self.tur.playlist, self.tur.waitlist2, self.tur.playlist2)
             # self.root.deiconify()
         return self.game_count.get()
 
