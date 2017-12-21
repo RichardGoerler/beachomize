@@ -39,7 +39,7 @@ Installation
 ------------
 Download the [latest release](https://github.com/RichardGoerler/beachomize/releases) or clone the [git repository](https://github.com/RichardGoerler/beachomize).
 ### Prerequisites
-In order to run **beachomize** you need to have Python installed on your machine. Python2 is recommended, but it should also run work Python3. The python packages Tkinter and Numpy are required.
+In order to run **beachomize** you need to have Python installed on your machine. Python2 is recommended, but it should also run on Python3. The python packages Tkinter and Numpy are required.
 #### Install Python2, Tkinter and Numpy
 ##### Linux
 Use your package manager to install the packages *python*, *python-tk* and *python-numpy*
