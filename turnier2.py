@@ -213,7 +213,7 @@ class Turnier:
         self.players["name"] = names
         self.players["mmr"] = self.init_mmr
         self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag_w"] = self.players["mmr_tag_l"] = [0]*self.p
-        self.players["wait_prob"] = [3]*self.p
+        self.players["wait_prob"] = [2]*self.p
         self.players_copy = None
         self.partner_matrix = np.eye(self.p)
         self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False). If True, different methods apply (see constants)
@@ -341,9 +341,14 @@ class Turnier:
         self.players.wait[waiting_this_turn] += 1
         #update waiting probabilities: reduce for players that waited, increase for players that played.
         playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)
-        self.players.wait_prob[waiting_this_turn] -= 1
-        self.players.wait_prob[playing_this_turn] += 1
-        self.players["wait_prob"] = np.clip(self.players.wait_prob, 1, 3)
+        if self.p > self.w*2:
+            self.players.wait_prob[waiting_this_turn] = 0
+            self.players.wait_prob[playing_this_turn] += 1
+            self.players["wait_prob"] = np.clip(self.players.wait_prob, 0, 4)
+        else:
+            self.players.wait_prob[waiting_this_turn] -= 1
+            self.players.wait_prob[playing_this_turn] += 2
+            self.players["wait_prob"] = np.clip(self.players.wait_prob, 1, 4)
 
         # MAKING TEAMS (OLD METHOD)
         # playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)    # all that are not waiting
