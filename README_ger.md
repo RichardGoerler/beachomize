@@ -4,7 +4,7 @@ beachomize
 ==========
 Manager für Beachvolleyball-Turniere mit zufälligen Teams und einem Matchmaking-Algorithmus. Implementiert in Python und Tkinter.
 
-![main_example](http://beachomize.de/image/main_example_ger.png)
+![main_example](https://beachomize.de/image/main_example_ger.png)
 
 ### Spielmodus
 #### Zufällige Teams
@@ -15,21 +15,21 @@ Spielpaarungen werden auf Basis der Spielstärkewerte (MMR - match making rating
 Funktionen
 --------
 ### Turnier-Einstellungen
-![welcome](http://beachomize.de/image/welcome_ger1.png)
+![welcome](https://beachomize.de/image/welcome_ger1.png)
 
 Anzahl der Felder, Teamgröße, Startzeit und Dauer, und die Art des Matchmakings sind wählbar. Falls nicht alle Felder über die gesamte Dauer des Turniers zur Verfügung stehen, können drei Zeitintervalle mit zwei verschiedenen Feld-Anzahlen definiert werden.
 ### Beliebige Anzahl an Spielern (auch ungerade oder prim)
-![game_number](http://beachomize.de/image/game_number_ger1.png)
+![game_number](https://beachomize.de/image/game_number_ger1.png)
 
 Es werden Vorschläge für die Anzahl der zu spielenden Spiele berechnet. Wenn Spieler 1 außer Konkurrenz bleibt, ist die Anzahl der Spiele flexibler.
 ### Spieler können auf Wunsch pausieren
-![wait_select](http://beachomize.de/image/wait_select.png)
+![wait_select](https://beachomize.de/image/wait_select.png)
 
 Normalerweise werden die aussetzenden Spieler zufällig bestimmt, aber es ist auch möglich, diese manuell zu wählen.
 ### Team-Zusammensetzungen wiederholen sich nicht
 Solange es möglich ist, bekommt kein Spieler denselben Mitspieler zweimal. Gilt nur für Zweierteams.
 ### Einstellbare Text- und Tabellengröße
-![settings](http://beachomize.de/image/settings_ger.png)
+![settings](https://beachomize.de/image/settings_ger.png)
 ### Automatisches Speichern
 Der Turnierstatus wird automatisch gespeichert um Datenverlust zu verhindern, z.B. wenn das Programm aus Versehen geschlossen wird. Beim Programmstart kann das letzte Turnier geladen werden.
 ### Sprache
