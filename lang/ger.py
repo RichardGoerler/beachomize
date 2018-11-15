@@ -47,6 +47,7 @@ SETTINGS_FONT_SIZE = "Schriftgröße:"
 SETTINGS_TABLE_HEIGHT = "Tabellenhöhe:"
 SETTINGS_STATS_HEIGHT = "Höhe Punktestände:"
 SETTINGS_HEIGHT_INFO = "Höheneinstellungen verlangen einen Neustart."
+SETTINGS_MMR_THRESHOLD = "Schwellwert für MMR-Gruppierung:"
 SETTINGS_PREVIEW = "Vorschau"
 SETTINGS_REVERT = "Verwerfen"
 

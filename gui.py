@@ -435,6 +435,12 @@ class SettingsWindow(dialog.Dialog):
         self.stats_height_spin.insert(0, self.gui.stats_height)
         self.stats_height_spin.grid(row=3, column=1)
         tk.Label(master, text=lang.SETTINGS_HEIGHT_INFO, bg="#EDEEF3", fg="red").grid(row=4, columnspan=2, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
+        if self.gui.tur.matchmaking:
+            tk.Label(master, text=lang.SETTINGS_MMR_THRESHOLD, bg="#EDEEF3").grid(row=5, column=0, padx=int(self.gui.default_size / 2), pady=int(self.gui.default_size / 2))
+            self.mmr_threshold_spin = tk.Spinbox(master, width=5, from_=0, to=100, bg="#EDEEF3")
+            self.mmr_threshold_spin.delete(0, "end")
+            self.mmr_threshold_spin.insert(0, self.gui.tur.mmr_range_threshold)
+            self.mmr_threshold_spin.grid(row=5, column=1)
         return self.default_size_spin
 
     def cmd(self, event=None):
@@ -445,7 +451,7 @@ class SettingsWindow(dialog.Dialog):
             self.fontval = int(self.default_size_spin.get())
         except:
             self.fontval = self.gui.default_size
-        if not self.fontval > 4 and self.fontval < 31:
+        if self.fontval < 5 or self.fontval > 30:
             self.fontval = self.gui.default_size
         self.default_size_spin.delete(0, "end")
         self.default_size_spin.insert(0, self.fontval)
@@ -453,7 +459,7 @@ class SettingsWindow(dialog.Dialog):
             self.tableval = int(self.table_height_spin.get())
         except:
             self.tableval = self.gui.table_height
-        if not self.tableval > 4 and self.tableval < 21:
+        if self.tableval < 5 or self.tableval > 20:
             self.tableval = self.gui.table_height
         self.table_height_spin.delete(0, "end")
         self.table_height_spin.insert(0, self.tableval)
@@ -461,10 +467,19 @@ class SettingsWindow(dialog.Dialog):
             self.statsval = int(self.stats_height_spin.get())
         except:
             self.statsval = self.gui.stats_height
-        if not self.statsval > 4 and self.statsval < 21:
+        if self.statsval < 5 or self.statsval > 20:
             self.statsval = self.gui.stats_height
         self.stats_height_spin.delete(0, "end")
         self.stats_height_spin.insert(0, self.statsval)
+        if self.gui.tur.matchmaking:
+            try:
+                self.thresval = int(self.mmr_threshold_spin.get())
+            except:
+                self.thresval = self.gui.tur.mmr_range_threshold
+            if self.thresval < 0 or self.thresval > 100:
+                self.thresval = self.gui.tur.mmr_range_threshold
+            self.mmr_threshold_spin.delete(0,"end")
+            self.mmr_threshold_spin.insert(0, self.thresval)
 
     def update_gui(self, val, main=True, this=True):
         if val > 4 and val < 31:
@@ -522,6 +537,9 @@ class SettingsWindow(dialog.Dialog):
         np.save(".font.npy", self.gui.default_size)
         np.save(".table.npy", self.gui.table_height)
         np.save(".stats.npy", self.gui.stats_height)
+        if self.gui.tur.matchmaking:
+            self.gui.tur.mmr_range_threshold = self.thresval
+            np.save(".thres.npy", self.gui.tur.mmr_range_threshold)
 
     def cancel(self, event=None):
         self.update_gui(self.gui.default_size, this=False)
@@ -865,7 +883,7 @@ class GUI:
 
             for ci in range(self.tur.c):
                 score_text = ""
-                for si in range(self.sets):
+                for si in range(len(res_list[ci])):
                     score_text += "   {} - {}   ".format(res_list[ci][si][0], res_list[ci][si][1])
                 self.mmr_labels[ci]["text"] = score_text
 

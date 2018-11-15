@@ -253,6 +253,11 @@ class Turnier:
         self.goodlist = []
         self.waitlist2 = []
         self.playlist2 = []
+        try:
+            self.mmr_range_threshold = np.load(".thres.npy")
+        except:
+            self.mmr_range_threshold = 10
+            np.save(".thres.npy", self.mmr_range_threshold)
         self.calc_game_counts2()
         self.g = 0
 
@@ -366,7 +371,15 @@ class Turnier:
             tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
             while not teams_ready:
                 playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
+                sortind = np.lexsort((np.random.rand(len(playing_this_turn)), self.players[playing_this_turn].mmr.astype(float)))
+                playing_this_turn = playing_this_turn[sortind]  # player indices sorted by mmr
                 playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
+                if self.players.mmr[playing_this_turn][-1] - self.players.mmr[playing_this_turn][0] > self.mmr_range_threshold:
+                    # if difference between max and min mmr is above threshold: divide players in two groups according to mmr
+                    # and allow only bipartite matchings
+                    halfcnt = float(len(playing_this_turn))/2.
+                    playing_partner_matrix[:int(np.ceil(halfcnt)), :int(np.floor(halfcnt))] = 1
+                    playing_partner_matrix[int(np.ceil(halfcnt)):, int(np.floor(halfcnt)):] = 1
                 team_indices = []
                 teams_ready = True
                 for ti in range(2*self.c):  # ti = team index

@@ -47,6 +47,7 @@ SETTINGS_FONT_SIZE = "Font size:"
 SETTINGS_TABLE_HEIGHT = "Table height:"
 SETTINGS_STATS_HEIGHT = "Standings height:"
 SETTINGS_HEIGHT_INFO = "Height settings require restart."
+SETTINGS_MMR_THRESHOLD = "MMR group threshold:"
 SETTINGS_PREVIEW = "Preview"
 SETTINGS_REVERT = "Revert"
 
