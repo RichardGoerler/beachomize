@@ -242,8 +242,6 @@ class WelcomeWindow(dialog.Dialog):
         self.interval2_scale.set(24.0)
         self.interval2_scale.grid(row=5, column=1)
 
-        self.mmrvar = tk.StringVar()
-        self.mmrvar.set(turnier.MMR_METHODS[-1])
         tk.Label(box, text=lang.WELCOME_MMR_METHOD, bg="#EDEEF3").grid(row=6, column=0, pady=int(self.gui.default_size / 2))
         self.mmrtagvar = tk.StringVar()
         self.mmrtagvar.set(turnier.MMR_TAGS[0])
