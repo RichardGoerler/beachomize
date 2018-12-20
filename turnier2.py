@@ -4,12 +4,7 @@ import numpy as np
 
 import pickle
 
-MMR_NONE = 0
-MMR_FLAT = 1
-MMR_FLAT_STREAK = 2
-MMR_DIFF = 3
-MMR_DIFF_STREAK = 4
-MMR_METHODS = ["none", "flat", "flat streak", "diff", "diff streak"]
+# matchmaking variable: List of booleans [consider score difference, consider mmr difference, consider win / loss streak (MMR tags)]
 MMR_TAG_CUM = 0
 MMR_TAG_IND = 1
 MMR_TAGS = ["cumulative", "individual"]
@@ -225,7 +220,7 @@ class Turnier:
         self.c13 = self_cp['c13']
 
 
-    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
+    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=[1, 1, 1], matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
@@ -243,7 +238,7 @@ class Turnier:
         self.players["wait_prob"] = [2]*self.p
         self.players_copy = None
         self.partner_matrix = np.eye(self.p)
-        self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False). If True, different methods apply (see constants)
+        self.matchmaking = matchmaking   # List of booleans [consider score difference, consider mmr difference, consider win / loss streak (MMR tags)]
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
         self.orgatime = orgatime
@@ -478,6 +473,9 @@ class Turnier:
         if game_number == -1:
             game_number = self.i-1
         team_indices_sorted = self.games[game_number]
+        teams_sorted = self.players[team_indices_sorted]
+        team_mmr = np.mean(teams_sorted.mmr.astype(float), axis=1)
+        print("team_mmr", team_mmr)
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
             cumdiff = 0
@@ -486,6 +484,7 @@ class Turnier:
                 score1 = set_result[0]
                 score2 = set_result[1]
                 scorediff = score1-score2
+                maxpoints = max(score1, score2)
                 cumdiff += scorediff
 
                 for pi in range(self.teamsize):
@@ -500,26 +499,18 @@ class Turnier:
                     self.players[team_indices_sorted[2 * ci, pi]].points += score1
                     self.players[team_indices_sorted[2 * ci + 1, pi]].points += score2
 
-                    if self.matchmaking == MMR_DIFF_STREAK:
-                        # according to mmr_tags scorediff is multiplied with 0.3, 0.6 or 1. When on winning/losing streak, game outcomes are more strongly weighted
-                        # this is intended to decrease the influence of random fluctuations in performance
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_l]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_l]
+                    sign_1 = [-1, 0, 1][np.sign(scorediff) + 1]
+                    sign_2 = [-1, 0, 1][np.sign(-scorediff) + 1]
 
-                    if self.matchmaking == MMR_FLAT_STREAK:
-                        #same as diff streak, but is multiplied with one, irrespective of points dfference
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [0.3, 0.6, 1][pl[0, pi].mmr_tag_w] if scorediff > 0 else [-0.3, -0.6, -1][pl[0, pi].mmr_tag_l]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= [0.3, 0.6, 1][pl[1, pi].mmr_tag_w] if scorediff < 0 else [-0.3, -0.6, -1][pl[1, pi].mmr_tag_l]
+                    streak_1 = [0.3, 0.6, 1][pl[0,pi].mmr_tag_w] if scorediff > 0 else [0.3, 0.6, 1][pl[0,pi].mmr_tag_l]
+                    streak_2 = [0.3, 0.6, 1][pl[1,pi].mmr_tag_w] if scorediff < 0 else [0.3, 0.6, 1][pl[1,pi].mmr_tag_l]
 
-                    if self.matchmaking == MMR_DIFF:
-                        #mmr is the same as points difference
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff
+                    mmr_diff = team_mmr[2*ci+1]-team_mmr[2*ci]  # This is the other direction than scorediff. When scorediff and mmr_diff are added, values are higher in case of a surprising result
 
-                    if self.matchmaking == MMR_FLAT:
-                        # generate index 0: lost, 1: draw, 2: won. index mmr array with that in a way that lose means -1, draw means 0 and win means +1
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [-1, 0, 1][np.sign(scorediff) + 1]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += [-1, 0, 1][np.sign(-scorediff) + 1]
+                    self.players[team_indices_sorted[2 * ci, pi]].mmr += sign_1 * min(maxpoints, max(0, (scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1])))\
+                                                                             * [1, streak_1][self.matchmaking[2]]
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += sign_2 * min(maxpoints, max(0, (scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1])))\
+                                                                             * [1, streak_2][self.matchmaking[2]]
 
                 if self.matchmaking_tag == MMR_TAG_IND:
                     self._update_mmr_tag(ci, team_indices_sorted, scorediff)

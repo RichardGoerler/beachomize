@@ -245,19 +245,25 @@ class WelcomeWindow(dialog.Dialog):
         self.mmrvar = tk.StringVar()
         self.mmrvar.set(turnier.MMR_METHODS[-1])
         tk.Label(box, text=lang.WELCOME_MMR_METHOD, bg="#EDEEF3").grid(row=6, column=0, pady=int(self.gui.default_size / 2))
-        self.mmrmenu = tk.OptionMenu(box, self.mmrvar, command=self.update_mmr, *turnier.MMR_METHODS)
-        self.mmrmenu["menu"].config(bg="#EDEEF3")
-        self.mmrmenu.config(bg="#EDEEF3")
-        self.mmrmenu.grid(row=7, column=0)
         self.mmrtagvar = tk.StringVar()
         self.mmrtagvar.set(turnier.MMR_TAGS[0])
         self.taglabel = tk.Label(box, text=lang.WELCOME_MMR_TAGS, bg="#EDEEF3")
-        self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
+        self.taglabel.grid(row=10, column=0, pady=int(self.gui.default_size / 2))
         self.tagmenu = tk.OptionMenu(box, self.mmrtagvar, *turnier.MMR_TAGS)
         self.tagmenu.config(bg="#EDEEF3")
         self.tagmenu["menu"].config(bg="#EDEEF3")
-        self.tagmenu.grid(row=9, column=0)
+        self.tagmenu.grid(row=11, column=0)
         self.tag_rendered = True
+
+        self.mmr_score_diff_var = tk.IntVar()
+        self.mmr_score_diff_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_SCORE_DIFFERENCE, variable=self.mmr_score_diff_var, command=None, bg="#EDEEF3").grid(row=7, column=0)
+        self.mmr_mmr_diff_var = tk.IntVar()
+        self.mmr_mmr_diff_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_MMR_DIFFERENCE, variable=self.mmr_mmr_diff_var, command=None, bg="#EDEEF3").grid(row=8, column=0)
+        self.mmr_streak_var = tk.IntVar()
+        self.mmr_streak_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_STREAK, variable=self.mmr_streak_var, command=self.update_mmr, bg="#EDEEF3").grid(row=9, column=0)
 
         self.bind('<Return>', self.new)
 
@@ -325,10 +331,11 @@ class WelcomeWindow(dialog.Dialog):
         self.interval2_scale["label"] = lang.TIME_FORMAT.format(hour%24, minute)
 
     def update_mmr(self, event=None):
-        if "streak" in self.mmrvar.get():
+        if self.mmr_streak_var.get():
+        # if "streak" in self.mmrvar.get():
             if not self.tag_rendered:
-                self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
-                self.tagmenu.grid(row=9, column=0)
+                self.taglabel.grid(row=10, column=0, pady=int(self.gui.default_size / 2))
+                self.tagmenu.grid(row=11, column=0)
                 self.tag_rendered = True
         else:
             if self.tag_rendered:
@@ -366,7 +373,7 @@ class WelcomeWindow(dialog.Dialog):
 
         names, mmr = self.gui.in_players()
         self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), courts13=self.cvar_outer.get(), start_time=starttime, duration=duration, t1=t1, t2=t2, t3=t3,
-                                       matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), teamsize=self.tvar.get())
+                                       matchmaking=[self.mmr_score_diff_var.get(), self.mmr_mmr_diff_var.get(), self.mmr_streak_var.get()], matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), teamsize=self.tvar.get())
 
         self.cancel()
 
