@@ -253,7 +253,7 @@ class WelcomeWindow(dialog.Dialog):
         self.mmrtagvar.set(turnier.MMR_TAGS[0])
         self.taglabel = tk.Label(box, text=lang.WELCOME_MMR_TAGS, bg="#EDEEF3")
         self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
-        self.tagmenu = tk.OptionMenu(box, self.mmrtagvar, *turnier.MMR_METHODS)
+        self.tagmenu = tk.OptionMenu(box, self.mmrtagvar, *turnier.MMR_TAGS)
         self.tagmenu.config(bg="#EDEEF3")
         self.tagmenu["menu"].config(bg="#EDEEF3")
         self.tagmenu.grid(row=9, column=0)
@@ -371,12 +371,14 @@ class WelcomeWindow(dialog.Dialog):
         self.cancel()
 
 class GameNumberWindow(dialog.Dialog):
-    def __init__(self, parent, gui, goodlist, waitlist, playlist, waitlist2, playlist2, title=lang.GAME_NUMBER_TITLE):
+    def __init__(self, parent, gui, goodlist, waitlist, playlist, waitlist2, playlist2, waitlist3, playlist3, title=lang.GAME_NUMBER_TITLE):
         self.goodlist = goodlist
         self.waitlist = waitlist
         self.playlist = playlist
         self.waitlist2 = waitlist2
         self.playlist2 = playlist2
+        self.waitlist3 = waitlist3
+        self.playlist3 = playlist3
         dialog.Dialog.__init__(self, parent, gui, title)
 
     def body(self, master):
@@ -403,6 +405,14 @@ class GameNumberWindow(dialog.Dialog):
         for pp2, play2 in enumerate(self.playlist2):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(play2), variable=self.gui.game_count, value=play2, bg="#EDEEF3"))
             buttonlist[-1].grid(row=4, column=1+pp2)
+        tk.Label(gridframe, text=lang.RIZEMODE_WAIT3.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=5)
+        for ww3, wait3 in enumerate(self.waitlist3):
+            buttonlist.append(tk.Radiobutton(gridframe, text=str(wait3), variable=self.gui.game_count, value=wait3, bg="#EDEEF3"))
+            buttonlist[-1].grid(row=5, column=1 + ww3)
+        tk.Label(gridframe, text=lang.RIZEMODE_PLAY3.format(self.gui.tur.players.name[0]), bg="#EDEEF3").grid(row=6)
+        for pp3, play3 in enumerate(self.playlist3):
+            buttonlist.append(tk.Radiobutton(gridframe, text=str(play3), variable=self.gui.game_count, value=play3, bg="#EDEEF3"))
+            buttonlist[-1].grid(row=6, column=1 + pp3)
         gridframe.pack()
         return buttonlist[0]
 
@@ -742,7 +752,7 @@ class GUI:
         self.game_count.set(0)
         while self.game_count.get() == 0:
             # self.root.withdraw()
-            self.selector = GameNumberWindow(self.root, self, self.tur.goodlist, self.tur.waitlist, self.tur.playlist, self.tur.waitlist2, self.tur.playlist2)
+            self.selector = GameNumberWindow(self.root, self, self.tur.goodlist, self.tur.waitlist, self.tur.playlist, self.tur.waitlist2, self.tur.playlist2, self.tur.waitlist3, self.tur.playlist3)
             # self.root.deiconify()
         return self.game_count.get()
 

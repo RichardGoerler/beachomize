@@ -122,11 +122,26 @@ class Turnier:
                 good_found = True
             elif self.p == f + 2:  # player 0 can play 2 games more
                 if wraps > 0:
-                    self.playlist2.append(gi)
-                    self.maxwait_list[gi] = wraps+1
+                    appearances = gi - (wraps + 1)
+                    if (appearances + 2) <= gi:         # in some cases, calculation may yield game number that is not possible because of excess player one games
+                        self.playlist2.append(gi)
+                        self.maxwait_list[gi] = wraps+1
             elif f == 2:
-                self.waitlist2.append(gi)
-                self.maxwait_list[gi] = wraps
+                appearances = gi - wraps
+                if (appearances - 2) >= 0:             # in some cases, calculation may yield game number that is not possible because of negative player one games
+                    self.waitlist2.append(gi)
+                    self.maxwait_list[gi] = wraps
+            elif self.p == f + 3:  # player 0 can play 3 games more
+                if wraps > 0:
+                    appearances = gi - (wraps + 1)
+                    if (appearances + 3) <= gi:        # same as above
+                        self.playlist3.append(gi)
+                        self.maxwait_list[gi] = wraps+1
+            elif f == 3:
+                appearances = gi - wraps
+                if (appearances - 3) >= 0:              # same
+                    self.waitlist3.append(gi)
+                    self.maxwait_list[gi] = wraps
 
 
 
@@ -137,6 +152,8 @@ class Turnier:
         goodl = []
         playl2 = []
         waitl2 = []
+        playl3 = []
+        waitl3 = []
         for ppp in range(begin,end):
             self.p = ppp
             self.waitlist = []
@@ -144,6 +161,8 @@ class Turnier:
             self.goodlist = []
             self.waitlist2 = []
             self.playlist2 = []
+            self.waitlist3 = []
+            self.playlist3 = []
             self.t1 = self.t1_init
             self.t2 = self.t2_init
             self.t3 = self.t3_init
@@ -174,6 +193,8 @@ class Turnier:
             goodl.append(self.goodlist)
             playl2.append(self.playlist2)
             waitl2.append(self.waitlist2)
+            playl3.append(self.playlist3)
+            waitl3.append(self.waitlist3)
             print("")
             row_format = "{:>2} | good | " + "{:>2} " * len(self.goodlist)
             print(row_format.format(ppp, *self.goodlist))
@@ -185,12 +206,18 @@ class Turnier:
             print(row_format.format(ppp, *self.waitlist2))
             row_format = "{:>2} | pla2 | " + "{:>2} " * len(self.playlist2)
             print(row_format.format(ppp, *self.playlist2))
+            row_format = "{:>2} | wai3 | " + "{:>2} " * len(self.waitlist3)
+            print(row_format.format(ppp, *self.waitlist3))
+            row_format = "{:>2} | pla3 | " + "{:>2} " * len(self.playlist3)
+            print(row_format.format(ppp, *self.playlist3))
         self.p = self_cp['p']
         self.waitlist = self_cp['waitlist']
         self.playlist = self_cp['playlist']
         self.goodlist = self_cp['goodlist']
         self.waitlist2 = self_cp['waitlist2']
         self.playlist2 = self_cp['playlist2']
+        self.waitlist3 = self_cp['waitlist3']
+        self.playlist3 = self_cp['playlist3']
         self.t1 = self_cp['t1']
         self.t2 = self_cp['t2']
         self.t3 = self_cp['t3']
@@ -253,6 +280,8 @@ class Turnier:
         self.goodlist = []
         self.waitlist2 = []
         self.playlist2 = []
+        self.waitlist3 = []
+        self.playlist3 = []
         self.calc_game_counts2()
         self.g = 0
 
@@ -266,6 +295,10 @@ class Turnier:
             self.rizemode = -2
         elif self.g in self.playlist2:
             self.rizemode = 2
+        elif self.g in self.waitlist3:
+            self.rizemode = -3
+        elif self.g in self.playlist3:
+            self.rizemode = 3
         self.players[0].wait = self.rizemode
         self.maxwait = self.maxwait_list[self.g]
         self.appearances = self.g - self.maxwait
