@@ -695,7 +695,7 @@ class GUI:
             self.game_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.result_but = tk.Button(buttonbox, text=lang.ENTER_RESULT_BUTTON, command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
             self.result_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
-            self.sets = 2
+            self.sets = 1
             self.stats_but = tk.Button(buttonbox, text=lang.STATS_BUTTON, command=self.show_stats, bg="#EDEEF3")
             self.stats_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.disp_mmr_var = tk.IntVar()
