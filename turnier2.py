@@ -507,9 +507,9 @@ class Turnier:
 
                     mmr_diff = team_mmr[2*ci+1]-team_mmr[2*ci]  # This is the other direction than scorediff. When scorediff and mmr_diff are added, values are higher in case of a surprising result
 
-                    self.players[team_indices_sorted[2 * ci, pi]].mmr += sign_1 * min(maxpoints, max(0, (scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1])))\
+                    self.players[team_indices_sorted[2 * ci, pi]].mmr += sign_1 * min(maxpoints, max(0, (abs(scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1]))))\
                                                                              * [1, streak_1][self.matchmaking[2]]
-                    self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += sign_2 * min(maxpoints, max(0, (scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1])))\
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += sign_2 * min(maxpoints, max(0, (abs(scorediff * self.matchmaking[0] + mmr_diff * self.matchmaking[1]))))\
                                                                              * [1, streak_2][self.matchmaking[2]]
 
                 if self.matchmaking_tag == MMR_TAG_IND:
