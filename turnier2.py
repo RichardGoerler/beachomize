@@ -220,10 +220,11 @@ class Turnier:
         self.c13 = self_cp['c13']
 
 
-    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=[1, 1, 1], matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
+    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=[1, 1, 1], matchmaking_tag=MMR_TAG_CUM, females=0, display_mmr=False, orgatime=3, teamsize=2):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
+        self.females = females
         #consists of three intervals t1..t2..t3 at max. These numbers are proportions of the total time. t1 and t3 take place the same number of courts.
         self.t1 = self.t1_init = t1
         self.t2 = self.t2_init = t2
@@ -238,6 +239,8 @@ class Turnier:
         self.players["wait_prob"] = [2]*self.p
         self.players_copy = None
         self.partner_matrix = np.eye(self.p)
+        if self.females:  # if female players are in the game prevent w/w games, for a first fix of unfair pairings of men vs women teams
+            self.partner_matrix[-self.females:, -self.females:] = np.ones((self.females, self.females))
         self.matchmaking = matchmaking   # List of booleans [consider score difference, consider mmr difference, consider win / loss streak (MMR tags)]
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
@@ -389,6 +392,8 @@ class Turnier:
         if self.teamsize == 2:
             if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
                 self.partner_matrix = np.eye(self.p)
+                if self.females:  # exclude w/w teams
+                    self.partner_matrix[-self.females:, -self.females:] = np.ones((self.females, self.females))
                 ret = 1
             teams_ready = False
             tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
@@ -475,7 +480,6 @@ class Turnier:
         team_indices_sorted = self.games[game_number]
         teams_sorted = self.players[team_indices_sorted]
         team_mmr = np.sum(teams_sorted.mmr.astype(float), axis=1)  # we use sum here because, we suppose a player is expected to score x points when his mmr is x. Thus, to calculate expected result, MMRs are summed up.
-        print("team_mmr", team_mmr)
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
             cumdiff = 0

@@ -369,9 +369,10 @@ class WelcomeWindow(dialog.Dialog):
         self.withdraw()
         self.update_idletasks()
 
-        names, mmr = self.gui.in_players()
+        names, mmr, female_count = self.gui.in_players()
         self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), courts13=self.cvar_outer.get(), start_time=starttime, duration=duration, t1=t1, t2=t2, t3=t3,
-                                       matchmaking=[self.mmr_score_diff_var.get(), self.mmr_mmr_diff_var.get(), self.mmr_streak_var.get()], matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), teamsize=self.tvar.get())
+                                       matchmaking=[self.mmr_score_diff_var.get(), self.mmr_mmr_diff_var.get(), self.mmr_streak_var.get()],
+                                       matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), females=female_count, teamsize=self.tvar.get())
 
         self.cancel()
 
@@ -775,15 +776,20 @@ class GUI:
             filecontent = f.readlines()
         names = []
         init_mmr = []
+        male_count = 1000
         for st in filecontent:
             spl = st.split()
             if len(spl) > 1 and isfloat(spl[-1]):
                 init_mmr.append(float(spl[-1]))
                 names.append(" ".join(spl[:-1]))
+            elif '=' in spl[0]:  # Separator that contains '='. Female players follow after separator.
+                male_count = len(names)
             else:
                 init_mmr.append(0)
                 names.append(" ".join(spl))
-        return names, init_mmr
+        female_count = max(0, len(names)-male_count)
+
+        return names, init_mmr, female_count
 
     def in_court_names(self):
         filename = FILENAME_COURTS
