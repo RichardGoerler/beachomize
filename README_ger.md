@@ -39,11 +39,11 @@ Installation
 ------------
 [Latest release](https://github.com/RichardGoerler/beachomize/releases) herunterladen oder das [git repository](https://github.com/RichardGoerler/beachomize) klonen.
 ### Systemvoraussetzungen
-Um **beachomize** zu verwenden, muss Python installiert sein. Python2 ist empfohlen, aber es sollte auch mit Python3 funktionieren. Die Python-Pakete Tkinter und Numpy werden benötigt.
-#### Installation von Python2, Tkinter and Numpy
+Um **beachomize** zu verwenden, muss Python installiert sein. Die Python-Pakete Tkinter und Numpy werden benötigt.
+#### Installation von Python3, Tkinter and Numpy
 ##### Linux
-Paketmanager verwenden, um die Pakete *python*, *python-tk* und *python-numpy* zu installieren.
-Unter Ubuntu z.B. sollte **sudo apt-get install python python-tk python-numpy** in den meisten Fällen funktionieren.
+Paketmanager verwenden, um die Pakete *python3*, *python3-tk* und *python3-numpy* zu installieren.
+Unter Ubuntu z.B. sollte **sudo apt-get install python3 python3-tk python3-numpy** in den meisten Fällen funktionieren.
 ##### Windows
 Unter Windows wird üblicherweise *Anaconda* verwendet, um Python zu installieren. Die Windows-Version gibt es [hier](https://www.continuum.io/downloads#windows). In dieser Installation sollten die benötigten Pakete bereits enthalten sein.
 
@@ -52,7 +52,7 @@ Verwendung
 Vor dem Turnier müssen die Namen der teilnehmenden Spieler in die Datei *players.txt* eingetragen werden. Dabei sollte jede Zeile den Namen eines Spielers enthalten, optional gefolgt von der initialen Spielstärke des Spielers (standardmäßig 0).
 Durch Bearbeiten der Datei *courts.txt* können auch die Namen der Spielfelder eingestellt werden. Fehlt die Datei, werden die Felder einfach durchnummeriert.
 
-Starten des Programms: Im Anaconda- oder Linux-Terminal zum **beachomize**-Verzeichnis wechseln und **python gui&#46;py** eingeben.
+Starten des Programms: Im Anaconda- oder Linux-Terminal zum **beachomize**-Verzeichnis wechseln und **python gui&#46;py** oder **python3 gui&#46;py** eingeben, abhängig von der Art der Installation.
 
 Um die Sprache zu ändern, muss die Datei *\_\_init\_\_.py* im *lang*-Verzeichnis editiert und **eng** durch ein anderes Kürzel (z.B. **ger**) ersetzt werden. Eine python-Datei mit demselben Namen, die alle notwendigen Konstanten definiert, muss im *lang*-Ordner liegen.
 
