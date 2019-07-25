@@ -39,11 +39,11 @@ Installation
 ------------
 Download the [latest release](https://github.com/RichardGoerler/beachomize/releases) or clone the [git repository](https://github.com/RichardGoerler/beachomize).
 ### Prerequisites
-In order to run **beachomize** you need to have Python installed on your machine. Python2 is recommended, but it should also run on Python3. The python packages Tkinter and Numpy are required.
-#### Install Python2, Tkinter and Numpy
+In order to run **beachomize** you need to have Python installed on your machine. The python packages Tkinter and Numpy are required.
+#### Install Python3, Tkinter and Numpy
 ##### Linux
-Use your package manager to install the packages *python*, *python-tk* and *python-numpy*
-For instance, on Ubuntu **sudo apt-get install python python-tk python-numpy** should work in most cases.
+Use your package manager to install the packages *python3*, *python3-tk* and *python3-numpy*
+For instance, on Ubuntu **sudo apt-get install python3 python3-tk python3-numpy** should work in most cases.
 ##### Windows
 On Windows, *Anaconda* is usually the way to run python. You can download the windows version [here](https://www.continuum.io/downloads#windows). In that installation, the required packages should already be included.
 
@@ -52,7 +52,7 @@ Usage
 Before starting your tournament, make sure you place your player names in the file *players.txt*. Each line should consist of a player name and optionally the initial MMR of that player (default 0).  
 You can also customize the court names and sorting by editing the file *courts.txt*. Delete the file to use default numbering.
 
-In your Anaconda or Linux terminal, navigate to the **beachomize** directory and type **python gui&#46;py**
+In your Anaconda or Linux terminal, navigate to the **beachomize** directory and type **python gui&#46;py** or **python3 gui&#46;py**, depending on your installation type.
 
 To change the language, edit the file *\_\_init\_\_.py* in the *lang*-directory. Replace **eng** with the language of your choice. A python-file with that name, defining all necessary constants, has to be present in the *lang*-folder.
 
