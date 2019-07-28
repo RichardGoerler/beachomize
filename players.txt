@@ -1,19 +1,20 @@
 Odin 0
 Thor 0
 Loki 0
-Skadi 0
 Heimdall 0
-Freya 0
 Balder 0
 Ymir 0
-Sol 0
-Urd 0
 Beowulf 0
-Eir 0
 Bragir 0
-Idun 0
 Magni 0
 Modi 0
+Sleipnir 0
+==========
+Skadi 0
+Freya 0
+Sol 0
+Urd 0
+Eir 0
+Idun 0
 Verdandi 0
 Frigg 0
-Sleipnir 0
