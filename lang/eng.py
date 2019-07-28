@@ -59,6 +59,7 @@ RIZEMODE_PLAY2 = "{} plays two more:"
 RIZEMODE_WAIT2 = "{} waits two more:"
 RIZEMODE_PLAY3 = "{} plays three more:"
 RIZEMODE_WAIT3 = "{} waits three more:"
+GAME_NUMBER_UNCONSTRAINED = "Indefinite:"
 
 WELCOME_TITLE = "beachomize"
 WELCOME_HEADING = "beachomize - tournament manager"

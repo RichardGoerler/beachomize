@@ -419,6 +419,9 @@ class GameNumberWindow(dialog.Dialog):
         for pp3, play3 in enumerate(self.playlist3):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(play3), variable=self.gui.game_count, value=play3, bg="#EDEEF3"))
             buttonlist[-1].grid(row=6, column=1 + pp3)
+        tk.Label(gridframe, text=lang.GAME_NUMBER_UNCONSTRAINED, bg="#EDEEF3").grid(row=7)
+        buttonlist.append(tk.Radiobutton(gridframe, text=str(turnier.UNCONSTRAINED_GAME_NUMBER), variable=self.gui.game_count, value=-1, bg="#EDEEF3"))
+        buttonlist[-1].grid(row=7, column=1)
         gridframe.pack()
         return buttonlist[0]
 
@@ -663,7 +666,10 @@ class GUI:
                     offs += 1
                 hour = int(tim/100)
                 minute = int(tim-hour*100)
-                self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
+                if self.tur.g_list[1] == turnier.UNCONSTRAINED_GAME_NUMBER:     # if we are in unconstrained game number mode, leave out the time
+                    self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d}").format(id + 1), bg="#EDEEF3"))
+                else:
+                    self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
                 self.schedule_labels[id].grid(row=(id+offs)%self.table_height, column=int((id+offs)/self.table_height), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)

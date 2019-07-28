@@ -12,6 +12,7 @@ MMR_TAG_IND = 1
 MMR_TAGS = ["cumulative", "individual"]
 TRIES = 100
 PRED_CORR_DISCOUNT = 0.5
+UNCONSTRAINED_GAME_NUMBER = 30
 
 def load(gui, filename="saved.p"):
     with open(filename, 'rb') as f:
@@ -286,24 +287,31 @@ class Turnier:
         self.g = 0
 
     def set_game_count(self, g):
-        self.g = g
+        if g == -1:
+            self.g = UNCONSTRAINED_GAME_NUMBER
+            self.maxwait = UNCONSTRAINED_GAME_NUMBER
+            self.appearances = self.g - self.maxwait
+            self.g_list = [0, UNCONSTRAINED_GAME_NUMBER, 0]
+        else:
+            self.g = g
+            if self.g in self.waitlist:
+                self.rizemode = -1
+            elif self.g in self.playlist:
+                self.rizemode = 1
+            elif self.g in self.waitlist2:
+                self.rizemode = -2
+            elif self.g in self.playlist2:
+                self.rizemode = 2
+            elif self.g in self.waitlist3:
+                self.rizemode = -3
+            elif self.g in self.playlist3:
+                self.rizemode = 3
+            self.players[0].wait = self.rizemode
+            self.maxwait = self.maxwait_list[self.g]
+            self.appearances = self.g - self.maxwait
+            self.g_list = self.games_intervalwise(self.g)
+
         self.init_partner_matrix(first=True)
-        if self.g in self.waitlist:
-            self.rizemode = -1
-        elif self.g in self.playlist:
-            self.rizemode = 1
-        elif self.g in self.waitlist2:
-            self.rizemode = -2
-        elif self.g in self.playlist2:
-            self.rizemode = 2
-        elif self.g in self.waitlist3:
-            self.rizemode = -3
-        elif self.g in self.playlist3:
-            self.rizemode = 3
-        self.players[0].wait = self.rizemode
-        self.maxwait = self.maxwait_list[self.g]
-        self.appearances = self.g - self.maxwait
-        self.g_list = self.games_intervalwise(self.g)
         if self.g_list[0] == 0:
             self.interval = 2     #interval saves which interval turnier is currently in. beginning with 1, not with zero because of alignment with variable names and other reasons
             self.w = self.w2
