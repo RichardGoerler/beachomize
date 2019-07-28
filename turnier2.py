@@ -4,15 +4,15 @@ import numpy as np
 
 import pickle
 
-MMR_NONE = 0
-MMR_FLAT = 1
-MMR_FLAT_STREAK = 2
-MMR_DIFF = 3
-MMR_DIFF_STREAK = 4
-MMR_METHODS = ["none", "flat", "flat streak", "diff", "diff streak"]
+import pdb
+
+# matchmaking variable: List of booleans [consider score difference, consider mmr difference, consider win / loss streak (MMR tags)]
 MMR_TAG_CUM = 0
 MMR_TAG_IND = 1
 MMR_TAGS = ["cumulative", "individual"]
+TRIES = 100
+PRED_CORR_DISCOUNT = 0.5
+UNCONSTRAINED_GAME_NUMBER = 30
 
 def load(gui, filename="saved.p"):
     with open(filename, 'rb') as f:
@@ -225,10 +225,11 @@ class Turnier:
         self.c13 = self_cp['c13']
 
 
-    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=MMR_DIFF_STREAK, matchmaking_tag=MMR_TAG_CUM, display_mmr=False, orgatime=3, teamsize=2):
+    def __init__(self, names, mmr, courts=3, courts13=3, start_time=2100, duration=300, t1=0., t2=1., t3=0., matchmaking=[1, 1, 1], matchmaking_tag=MMR_TAG_CUM, females=0, display_mmr=False, orgatime=3, teamsize=2):
         self.init_mmr = mmr
         self.start_time = start_time
         self.duration = duration
+        self.females = females
         #consists of three intervals t1..t2..t3 at max. These numbers are proportions of the total time. t1 and t3 take place the same number of courts.
         self.t1 = self.t1_init = t1
         self.t2 = self.t2_init = t2
@@ -242,8 +243,8 @@ class Turnier:
         self.players["score"] = self.players["diff"] = self.players["points"] = self.players["wait"] = self.players["mmr_tag_w"] = self.players["mmr_tag_l"] = [0]*self.p
         self.players["wait_prob"] = [2]*self.p
         self.players_copy = None
-        self.partner_matrix = np.eye(self.p)
-        self.matchmaking = matchmaking   # whether to sort teams before making matches (True) or to randomize (False). If True, different methods apply (see constants)
+        self.female_ratio = self.females / self.p
+        self.matchmaking = matchmaking   # List of booleans [consider score difference, consider mmr difference, consider win / loss streak (MMR tags)]
         self.matchmaking_tag = matchmaking_tag   #whether to update mmr tag (streak information) after each set or after each game with cumulative score-difference
         self.display_mmr = display_mmr   # whether to show mmr when announcing games
         self.orgatime = orgatime
@@ -286,23 +287,31 @@ class Turnier:
         self.g = 0
 
     def set_game_count(self, g):
-        self.g = g
-        if self.g in self.waitlist:
-            self.rizemode = -1
-        elif self.g in self.playlist:
-            self.rizemode = 1
-        elif self.g in self.waitlist2:
-            self.rizemode = -2
-        elif self.g in self.playlist2:
-            self.rizemode = 2
-        elif self.g in self.waitlist3:
-            self.rizemode = -3
-        elif self.g in self.playlist3:
-            self.rizemode = 3
-        self.players[0].wait = self.rizemode
-        self.maxwait = self.maxwait_list[self.g]
-        self.appearances = self.g - self.maxwait
-        self.g_list = self.games_intervalwise(self.g)
+        if g == -1:
+            self.g = UNCONSTRAINED_GAME_NUMBER
+            self.maxwait = UNCONSTRAINED_GAME_NUMBER
+            self.appearances = self.g - self.maxwait
+            self.g_list = [0, UNCONSTRAINED_GAME_NUMBER, 0]
+        else:
+            self.g = g
+            if self.g in self.waitlist:
+                self.rizemode = -1
+            elif self.g in self.playlist:
+                self.rizemode = 1
+            elif self.g in self.waitlist2:
+                self.rizemode = -2
+            elif self.g in self.playlist2:
+                self.rizemode = 2
+            elif self.g in self.waitlist3:
+                self.rizemode = -3
+            elif self.g in self.playlist3:
+                self.rizemode = 3
+            self.players[0].wait = self.rizemode
+            self.maxwait = self.maxwait_list[self.g]
+            self.appearances = self.g - self.maxwait
+            self.g_list = self.games_intervalwise(self.g)
+
+        self.init_partner_matrix(first=True)
         if self.g_list[0] == 0:
             self.interval = 2     #interval saves which interval turnier is currently in. beginning with 1, not with zero because of alignment with variable names and other reasons
             self.w = self.w2
@@ -353,24 +362,147 @@ class Turnier:
                 self.c = self.c13
         ret = 0    #0 no matrix reset, 1 regular matrix reset, 2 error matrix reset
         #WAITING
-        waiting_this_turn = self.canwait(wait_request)
-        wr = len(waiting_this_turn)
-        noreq = np.setdiff1d(self.players.index, waiting_this_turn)
-        wdif = self.w - wr
-        self.i += 1  # increment game counter
-        min_wait = np.min(self.players.wait[noreq])
-        min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], noreq)
-        if not len(min_indices) < wdif:
-            wait_prob = self.players.wait_prob[min_indices]
-            probs = wait_prob.astype(float) / np.sum(wait_prob)
-            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
-        else:
-            waiting_this_turn = np.concatenate((waiting_this_turn, min_indices))
-            other_indices = np.setdiff1d(self.players.index[noreq], min_indices)
-            wait_prob = self.players.wait_prob[other_indices]
-            probs = wait_prob.astype(float) / np.sum(wait_prob)
-            waiting_this_turn = np.concatenate(
-                (waiting_this_turn, np.random.choice(other_indices, wdif - len(min_indices), replace=False, p=probs)))
+        # In some cases it is preferred to preserve the female-male ratio in the group of waiting people
+        gender_specific = False  # For strongly differing male and female counts this is counter-productive (because then we can rarely play minority games in the end)
+        if (0.6 > self.female_ratio > 0.4) and 0 == (self.teamsize % 2):
+            gender_specific = True  # except for this case, then it makes sense
+        ok = False
+        while not ok:      # In some cases, the gender-specific selection seemed to lead to players waiting more than max_wait. I'm not sure how to fix that, so after gender-specific selection, check
+                        # whether no player has more wait than max_wait. Otherwise ok is set to false. Edit: I am not sure whether this actually happens, might have been
+                        # a different issue. But I leave it that way, because it is not harmful.
+            ok = True
+            waiting_this_turn = self.canwait(wait_request)
+            wr = len(waiting_this_turn)
+            male_wr = len(np.nonzero(waiting_this_turn < (self.p-self.females))[0])   # how many male players have requested to wait
+            female_wr = wr - male_wr                                                  # same for female
+            wmale = int(self.w*(1-self.female_ratio))-male_wr                  # how many male players still have to be selected to wait
+            wfemale = int(self.w*self.female_ratio)-female_wr                  # same for female
+                                                                               # In the usual case, male_wr + female_wr + wmale + wfemale = w-1 and not = w, because of the truncation
+                                                                               # Thus, the last waiting player must be chosen randomly from both groups
+            wrandom = self.w - wr - wmale - wfemale                            # This variable hold the number of players to choose randomly. It is either 0 or 1
+
+            self.i += 1        # increment game counter
+            done = (wr == self.w)
+            while not done:
+                not_waiting = np.setdiff1d(self.players.index, waiting_this_turn)
+                min_wait = np.min(self.players.wait[not_waiting])
+                min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], not_waiting)
+                male_min_ind = min_indices[np.nonzero(min_indices < (self.p - self.females))[0]]     # All male players that are available for waiting
+                female_min_ind = min_indices[np.nonzero(min_indices >= (self.p - self.females))[0]]  # same for female
+                malediff = len(male_min_ind) - wmale                                    # This is <= 0 if we can select all male players in this iteration and < 0 if we need to continue in the next
+                femalediff = len(female_min_ind) - wfemale                              # Same for female
+                wmale_this = min(len(male_min_ind), wmale)
+                wfemale_this = min(len(female_min_ind), wfemale)
+                wmale -= wmale_this
+                wfemale -= wfemale_this
+                # We are done after this iteration if we can select all players in this iteration: male, female and random (in case gender_specific is set)
+                # Otherwise we just select randomly - with the analogue terminating condition
+                if gender_specific:
+                    if malediff >= 0 and femalediff >= 0:
+                        if malediff+femalediff >= wrandom:
+                            todo_list = ["male", "female", "random"]
+                            done = True
+                        else:
+                            # We select both male and female, but go to the next iteration to select the random
+                            todo_list = ["male", "female"]
+                            pass
+                    elif malediff >= 0 and femalediff < 0:
+                        # If we can select all male but not all female
+                        if malediff - wrandom <= 0:
+                            # If we can do one random after the males and then go to the next iteration to continue
+                            todo_list = ["male", "female", "random"]
+                        else:
+                            # If we cannot do that, it does not work out. We select randomly
+                            gender_specific = False
+                    elif malediff < 0 and femalediff >= 0:
+                        if femalediff - wrandom <= 0:
+                            todo_list = ["male", "female", "random"]
+                        else:
+                            gender_specific = False
+                    else:
+                        # We select all and then go to the next iteration
+                        todo_list = ["male", "female"]
+
+                if gender_specific:
+                    for what_to_do in todo_list:
+                        if what_to_do == "male":
+                            if wmale_this == 0:
+                                continue
+                            wait_prob_male = self.players.wait_prob[male_min_ind]
+                            probs_male = wait_prob_male.astype(float) / np.sum(wait_prob_male)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(male_min_ind, wmale_this, replace=False, p=probs_male)))
+                        elif what_to_do == "female":
+                            if wfemale_this == 0:
+                                continue
+                            wait_prob_female = self.players.wait_prob[female_min_ind]
+                            probs_female = wait_prob_female.astype(float) / np.sum(wait_prob_female)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(female_min_ind, wfemale_this, replace=False, p=probs_female)))
+                        elif wrandom > 0:
+                            min_indices_this = np.setdiff1d(min_indices, waiting_this_turn)  # These are left from min_indices
+                            if len(min_indices_this) == 0:
+                                continue
+                            wait_prob = self.players.wait_prob[min_indices_this]
+                            probs = wait_prob.astype(float) / np.sum(wait_prob)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices_this, wrandom, replace=False, p=probs)))
+                            wrandom = 0
+                else:
+                    # random selection
+                    wdif = self.w - len(waiting_this_turn)    # We need to select the missing waiting players
+                    if wdif <= len(min_indices):              # But we can select at max the number of min_indices
+                        done = True
+                    else:
+                        wdif = len(min_indices)
+                    wait_prob = self.players.wait_prob[min_indices]
+                    probs = wait_prob.astype(float) / np.sum(wait_prob)
+                    waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
+            # here waiting_this_turn is finished
+            # we need to check if it is valid and otherwise set ok to False
+            if np.any(self.players[waiting_this_turn].wait > self.maxwait):
+                ok = False
+                print("not ok.")
+
+
+        # LEGACY:
+        # noreq = np.setdiff1d(self.players.index, waiting_this_turn)
+        # wdif = self.w - wr   # wdif is the number of players that still need to be selected for wait, after wait requests have been registered
+        # self.i += 1  # increment game counter
+        # min_wait = np.min(self.players.wait[noreq])
+        # min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], noreq)
+        # if not len(min_indices) < wdif:   # we can choose all waiting players from the minimal pool
+        #     # only in this case we can select by gender
+        #     male_min_ind = np.nonzero(min_indices < (self.p - self.females))[0]     # All male players that are available for waiting
+        #     female_min_ind = np.nonzero(min_indices >= (self.p - self.females))[0]  # same for female
+        #     if not len(male_min_ind) < wmale and not len(female_min_ind) < wfemale:
+        #         #TODO: It would be better to be able to select by gender also when choosing from min_indices is not enough. If we can use all players from min_indices and still conform with the ratio, we are fine!
+        #         # Here we can do selection by gender
+        #         #Select male players for waiting
+        #         wait_prob_male = self.players.wait_prob[male_min_ind]
+        #         probs_male = wait_prob_male.astype(float) / np.sum(wait_prob_male)
+        #         waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(male_min_ind, wmale, replace=False, p=probs_male)))
+        #         # Select female players for waiting
+        #         wait_prob_female = self.players.wait_prob[female_min_ind]
+        #         probs_female = wait_prob_female.astype(float) / np.sum(wait_prob_female)
+        #         waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(female_min_ind, wfemale, replace=False, p=probs_female)))
+        #         wdif = self.w - len(waiting_this_turn)   # usually we need one player more (because wmale and wfemale do not add up to wdif
+        #     if wdif != 0:
+        #         if not wdif == 1:
+        #             print("WARNING. wdif is {}, but should be 1.".format(wdif))
+        #         # Here we do random selection, because it did not work by gender
+        #         # Also, we randomly select the last player if wmale and wfemale did not add up to wdif
+        #         wait_prob = self.players.wait_prob[min_indices]
+        #         probs = wait_prob.astype(float) / np.sum(wait_prob)
+        #         waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
+        # else:
+        #     waiting_this_turn = np.concatenate((waiting_this_turn, min_indices))
+        #     other_indices = np.setdiff1d(self.players.index[noreq], min_indices)
+        #
+        #     wait_prob = self.players.wait_prob[other_indices]
+        #     probs = wait_prob.astype(float) / np.sum(wait_prob)
+        #     waiting_this_turn = np.concatenate(
+        #         (waiting_this_turn, np.random.choice(other_indices, wdif - len(min_indices), replace=False, p=probs)))
+
+
+
         self.players.wait[waiting_this_turn] += 1
         #update waiting probabilities: reduce for players that waited, increase for players that played.
         playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)
@@ -393,17 +525,37 @@ class Turnier:
         # MAKING TEAMS (NEW METHOD) playing partner matrix is used for teamsize 2. Otherwise teams are unconstrained random.
         if self.teamsize == 2:
             if 0 == len(np.where(self.partner_matrix == 0)[0]):  # if partner matrix all 1, reset it
-                self.partner_matrix = np.eye(self.p)
+                self.init_partner_matrix(first=True)
                 ret = 1
             teams_ready = False
-            tries = 100    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
+            tries = TRIES    #in case matching cannot be found, but should theoretically be possible, try again that number of times before irregularly resetting partner matrix
             while not teams_ready:
                 playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
                 playing_partner_matrix = self.partner_matrix[playing_this_turn][:, playing_this_turn]
+                playing_minor_matrix = self.minor_partner_matrix[playing_this_turn][:, playing_this_turn]
+                playing_minor_mask = self.minor_mask[playing_this_turn][:, playing_this_turn]
                 team_indices = []
                 teams_ready = True
+                partner_matrix_temp = np.array(self.partner_matrix)
+                minor_matrix_temp = np.array(self.minor_partner_matrix)
+                if self.i - 1 >= self.second_half_start:
+                    # If we are in second half
+                    playing_partner_matrix_stored = playing_partner_matrix    # store original matrix. We need it again when we are finished with building minority teams (NOT SURE YET)
+                    playing_partner_matrix_minored = np.logical_and(playing_partner_matrix, playing_minor_matrix)         # load actual partner matrix from minor matrix (in first "half" the minority part is set to 1
+                    playing_partner_matrix_masked = np.logical_or(playing_partner_matrix_minored, playing_minor_mask)     # temporarily mask the non-minority part with ones to build minority teams
+                    playing_partner_matrix = playing_partner_matrix_masked
+                    if self.female_ratio < 0.5:
+                        num_min = np.count_nonzero(playing_this_turn >= (self.p-self.females))
+                    else:    # here ratio is > 0.5 because we don't get into second half when it is == 0.5
+                        num_min = np.count_nonzero(playing_this_turn < (self.p-self.females))
+                    minor_teams = num_min // (2 * self.teamsize) * 2
                 for ti in range(2*self.c):  # ti = team index
+                    if self.i - 1 >= self.second_half_start:
+                        if ti == minor_teams:
+                            # continue with normal team building. It is important to note that this only happens once, at the exact first index where team building is reverted to majority again
+                            playing_partner_matrix = playing_partner_matrix_stored     #reset to original matrix in which minority part is set to 1
                     counts = np.array([len(row)-np.count_nonzero(row) for row in playing_partner_matrix])
+                    counts[np.nonzero(counts == 0)] = 1000     #shift zero values to the back
                     lexsort_ind = np.lexsort((np.random.rand(len(counts)), counts))
                     # choose player with fewest matching possibilities
                     pid = lexsort_ind[0]
@@ -417,7 +569,7 @@ class Turnier:
                     zero_entries_indices = np.where(player_row == 0)[0]
                     if 0 == len(zero_entries_indices):  # if no choice possible, reset partner matrix & restart team making
                         if tries == 0:
-                            self.partner_matrix = np.eye(self.p)
+                            self.init_partner_matrix(first=True)
                             ret = 2
                         else:
                             tries -= 1
@@ -427,25 +579,57 @@ class Turnier:
                     # get partner for pl
                     par = playing_this_turn[choice]
                     # set corresponding indices in partner_matrix to 1
-                    self.partner_matrix[pl, par] = 1
-                    self.partner_matrix[par, pl] = 1
+                    partner_matrix_temp[pl, par] = 1
+                    partner_matrix_temp[par, pl] = 1
+                    if self.i - 1 >= self.second_half_start:
+                        minor_matrix_temp[pl, par] = 1
+                        minor_matrix_temp[par, pl] = 1
                     # now delete also pl's row from temp matrix
                     playing_partner_matrix = np.delete(playing_partner_matrix, pid, axis=0)
                     # and delete par's row and column and delete par from playing_this_turn
                     playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=0)
                     playing_partner_matrix = np.delete(playing_partner_matrix, choice, axis=1)
                     playing_this_turn = np.delete(playing_this_turn, choice)
+                    if self.i - 1 >= self.second_half_start:
+                        # delete rows and columns also in stored matrix. This matrix is restored after all minor teams have been composed
+                        playing_partner_matrix_stored = np.delete(playing_partner_matrix_stored, pid, axis=0)
+                        playing_partner_matrix_stored = np.delete(playing_partner_matrix_stored, pid, axis=1)
+                        playing_partner_matrix_stored = np.delete(playing_partner_matrix_stored, choice, axis=0)
+                        playing_partner_matrix_stored = np.delete(playing_partner_matrix_stored, choice, axis=1)
                     # add team to teams list
                     team_indices.append([pl, par])
+                # Check here whether minority teams are adjacent in mmr list and they would be matched together on one court
+                # Otherwise try again. If tries == 0, shift second half to a later game and restart team building without minors
+                if teams_ready and self.matchmaking:
+                    if self.i - 1 >= self.second_half_start and minor_teams > 0:
+                        teams = self.players[np.array(team_indices)]
+                        temp_mmr = np.sum(teams.mmr.astype(float), axis=1)  # calculate match-making-ratio for each team
+                        temp_mmr_sorted_indices = np.argsort(temp_mmr)[::-1]
+                        minor_indices = np.nonzero(np.isin(temp_mmr_sorted_indices, np.arange(minor_teams)))[0]     # Get indices of minor teams in mmr sorted list
+                        even_teams = minor_indices[::2]       # if we make pairs of teams, these are the first teams of these pairs
+                        if not np.all(np.mod(even_teams, 2) == 0):     # The first teams of these pairs must have an even index to be matched with the second teams
+                            teams_ready = False
+                        odd_teams = minor_indices[1::2]
+                        if not (odd_teams - 1) == even_teams:         # Make sure the "odd" teams come directly after the respective "even" team
+                            teams_ready = False
+                        if not teams_ready:
+                            if tries == 0:
+                                self.second_half_start = self.i
+                                tries = TRIES
+                            else:
+                                tries -= 1
             team_indices = np.array(team_indices)
+            self.partner_matrix = np.array(partner_matrix_temp)
+            self.minor_partner_matrix = np.array(minor_matrix_temp)
         else:
+            # TODO: There is a special case: If ratio == 0.5 and teamsize even, we can play with evenly mixed teams. I am not sure if it is worth implementing that, though.
             playing_this_turn = np.setdiff1d(self.players.index, waiting_this_turn)  # all that are not waiting
             team_indices = np.random.permutation(playing_this_turn).reshape((2*self.c, self.teamsize))
         teams = self.players[team_indices]
 
         # MATCHMAKING
         if self.matchmaking:
-            temp_mmr = np.mean(teams.mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
+            temp_mmr = np.sum(teams.mmr.astype(float), axis=1)    # calculate match-making-ratio for each team
             temp_mmr_sorted_indices = np.argsort(temp_mmr)[::-1]
             teams_sorted = teams[temp_mmr_sorted_indices]     # descendingly sorted by mmr (strongest come first).
         else:
@@ -457,6 +641,40 @@ class Turnier:
             pickle.dump(self, f)
 
         return ret
+
+    def init_partner_matrix(self, first=False):
+        self.partner_matrix = np.eye(self.p)
+        if self.females:  # if female players are in the game
+            if self.female_ratio < 0.5:
+                # prevent w/w games
+                self.partner_matrix[-self.females:, -self.females:] = np.ones((self.females, self.females))
+                if first:
+                    self.second_half_start = max(int(np.ceil(self.g / 2)), self.g - self.females + 1)  # from this game on, w/w games are generated and played if adjacent in MMR list
+                    self.minor_partner_matrix = np.eye(self.p)
+                    self.minor_mask = np.ones((self.p, self.p))
+                    self.minor_mask[-self.females:, -self.females:] = np.zeros((self.females, self.females))
+            elif self.female_ratio > 0.5:
+                # prevent m/m games
+                self.partner_matrix[:-self.females, :-self.females] = np.ones((self.p - self.females, self.p - self.females))
+                if first:
+                    self.second_half_start = max(int(np.ceil(self.g / 2)), self.g - (self.p - self.females) + 1)  # from this game on, m/m games are generated and played if adjacent in MMR list
+                    self.minor_partner_matrix = np.eye(self.p)
+                    self.minor_mask = np.ones((self.p, self.p))
+                    self.minor_mask[:-self.females, :-self.females] = np.zeros((self.p - self.females, self.p - self.females))
+            else:
+                # evenly matched numbers of male / female players
+                # only allow mixed games
+                self.partner_matrix[-self.females:, -self.females:] = np.ones((self.females, self.females))
+                self.partner_matrix[:-self.females, :-self.females] = np.ones((self.p - self.females, self.p - self.females))
+                if first:
+                    self.second_half_start = self.g  # no second half. we can always play mixed (At least in case of even team size)
+                    self.minor_partner_matrix = np.eye(self.p)
+                    self.minor_mask = np.zeros((self.p, self.p))
+        else:
+            if first:
+                self.second_half_start = self.g  # no second half. we can always play mixed (At least in case of even team size)
+                self.minor_partner_matrix = np.eye(self.p)
+                self.minor_mask = np.zeros((self.p, self.p))
 
     # def game_announce_end(self, message_prefix=""):
     #     if self.display_mmr and self.matchmaking:
@@ -478,6 +696,8 @@ class Turnier:
         if game_number == -1:
             game_number = self.i-1
         team_indices_sorted = self.games[game_number]
+        teams_sorted = self.players[team_indices_sorted]
+        team_mmr = np.sum(teams_sorted.mmr.astype(float), axis=1)  # we use sum here because, we suppose a player is expected to score x points when his mmr is x. Thus, to calculate expected result, MMRs are summed up.
         self.results[game_number] = res
         for ci, court_results in enumerate(self.results[game_number]):  # ci = court index
             cumdiff = 0
@@ -486,6 +706,7 @@ class Turnier:
                 score1 = set_result[0]
                 score2 = set_result[1]
                 scorediff = score1-score2
+                maxpoints = max(score1, score2)
                 cumdiff += scorediff
 
                 for pi in range(self.teamsize):
@@ -500,26 +721,56 @@ class Turnier:
                     self.players[team_indices_sorted[2 * ci, pi]].points += score1
                     self.players[team_indices_sorted[2 * ci + 1, pi]].points += score2
 
-                    if self.matchmaking == MMR_DIFF_STREAK:
-                        # according to mmr_tags scorediff is multiplied with 0.3, 0.6 or 1. When on winning/losing streak, game outcomes are more strongly weighted
-                        # this is intended to decrease the influence of random fluctuations in performance
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_w] if scorediff > 0 else scorediff*[0.3, 0.6, 1][pl[0,pi].mmr_tag_l]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_w] if scorediff < 0 else scorediff*[0.3, 0.6, 1][pl[1,pi].mmr_tag_l]
+                    mmr_diff = team_mmr[2 * ci + 1] - team_mmr[2 * ci]  # This is the other direction than scorediff. When scorediff and mmr_diff are added, values are higher in case of a surprising result
 
-                    if self.matchmaking == MMR_FLAT_STREAK:
-                        #same as diff streak, but is multiplied with one, irrespective of points dfference
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [0.3, 0.6, 1][pl[0, pi].mmr_tag_w] if scorediff > 0 else [-0.3, -0.6, -1][pl[0, pi].mmr_tag_l]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= [0.3, 0.6, 1][pl[1, pi].mmr_tag_w] if scorediff < 0 else [-0.3, -0.6, -1][pl[1, pi].mmr_tag_l]
+                    sign_1 = [-1, 0, 1][np.sign(scorediff) + 1]     # result (win:1, draw:0, loss:-1) from the perspective of team1
+                    sign_2 = [-1, 0, 1][np.sign(-scorediff) + 1]    # same for team2
 
-                    if self.matchmaking == MMR_DIFF:
-                        #mmr is the same as points difference
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += scorediff
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr -= scorediff
+                    mmr_sign_1 = [-1, 0, 1][int(np.sign(mmr_diff)) + 1]
 
-                    if self.matchmaking == MMR_FLAT:
-                        # generate index 0: lost, 1: draw, 2: won. index mmr array with that in a way that lose means -1, draw means 0 and win means +1
-                        self.players[team_indices_sorted[2 * ci, pi]].mmr += [-1, 0, 1][np.sign(scorediff) + 1]
-                        self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += [-1, 0, 1][np.sign(-scorediff) + 1]
+                    streak_1 = [0.3, 0.6, 1][pl[0,pi].mmr_tag_w] if scorediff > 0 else [0.3, 0.6, 1][pl[0,pi].mmr_tag_l]
+                    streak_2 = [0.3, 0.6, 1][pl[1,pi].mmr_tag_w] if scorediff < 0 else [0.3, 0.6, 1][pl[1,pi].mmr_tag_l]
+
+                    pred_corr_discount = PRED_CORR_DISCOUNT
+
+                    if mmr_sign_1 * sign_1 < 0:
+                        # win/loss prediction correct
+                        # mmr_diff has different sign than scorediff, meaning that the results is as predicted
+                        # in case MMR difference taken into account, the correction rate is lower because the overall prediction was correct
+                        if not self.matchmaking[0]:
+                            if not self.matchmaking[1]:
+                                # simplest method. Just bonus/malus of 1
+                                correction_term = 1
+                            else:
+                                # similar, but discounted because prediction was right
+                                correction_term = pred_corr_discount
+                        else:
+                            if not self.matchmaking[1]:
+                                correction_term = abs(scorediff)
+                            else:
+                                # if the winner performed better than expected (scorediff + mmr_diff < 0), they get a bonus, if worse than expected they get a malus.
+                                # same for the looser.
+                                correction_term = np.sign(scorediff) * (scorediff + mmr_diff) * pred_corr_discount
+                                if maxpoints*pred_corr_discount < abs(correction_term):
+                                    # maxpoints is the number of points the winner scored. mmr cannot be corrected by more than that
+                                    correction_term = maxpoints*pred_corr_discount * np.sign(correction_term)
+                    else:
+                        # win/loss prediction incorrect (or prediction and/or result is a draw
+                        # SURPRISE!
+                        # Team that wins gets all the points, team that looses gets the same amount subtracted
+                        if not self.matchmaking[0]:
+                            if not self.matchmaking[1]:
+                                correction_term = 1
+                            else:
+                                correction_term = min(maxpoints, abs(mmr_diff))
+                        else:
+                            if not self.matchmaking[1]:
+                                correction_term = abs(scorediff)
+                            else:
+                                correction_term = min(maxpoints, abs(scorediff + mmr_diff))
+
+                    self.players[team_indices_sorted[2 * ci, pi]].mmr += sign_1 * (correction_term / self.teamsize) * [1, streak_1][self.matchmaking[2]]
+                    self.players[team_indices_sorted[2 * ci + 1, pi]].mmr += sign_2 * (correction_term / self.teamsize) * [1, streak_2][self.matchmaking[2]]
 
                 if self.matchmaking_tag == MMR_TAG_IND:
                     self._update_mmr_tag(ci, team_indices_sorted, scorediff)

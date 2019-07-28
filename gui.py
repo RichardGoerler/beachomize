@@ -242,22 +242,26 @@ class WelcomeWindow(dialog.Dialog):
         self.interval2_scale.set(24.0)
         self.interval2_scale.grid(row=5, column=1)
 
-        self.mmrvar = tk.StringVar()
-        self.mmrvar.set(turnier.MMR_METHODS[-1])
         tk.Label(box, text=lang.WELCOME_MMR_METHOD, bg="#EDEEF3").grid(row=6, column=0, pady=int(self.gui.default_size / 2))
-        self.mmrmenu = tk.OptionMenu(box, self.mmrvar, command=self.update_mmr, *turnier.MMR_METHODS)
-        self.mmrmenu["menu"].config(bg="#EDEEF3")
-        self.mmrmenu.config(bg="#EDEEF3")
-        self.mmrmenu.grid(row=7, column=0)
         self.mmrtagvar = tk.StringVar()
         self.mmrtagvar.set(turnier.MMR_TAGS[0])
         self.taglabel = tk.Label(box, text=lang.WELCOME_MMR_TAGS, bg="#EDEEF3")
-        self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
+        self.taglabel.grid(row=10, column=0, pady=int(self.gui.default_size / 2))
         self.tagmenu = tk.OptionMenu(box, self.mmrtagvar, *turnier.MMR_TAGS)
         self.tagmenu.config(bg="#EDEEF3")
         self.tagmenu["menu"].config(bg="#EDEEF3")
-        self.tagmenu.grid(row=9, column=0)
+        self.tagmenu.grid(row=11, column=0)
         self.tag_rendered = True
+
+        self.mmr_score_diff_var = tk.IntVar()
+        self.mmr_score_diff_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_SCORE_DIFFERENCE, variable=self.mmr_score_diff_var, command=None, bg="#EDEEF3").grid(row=7, column=0)
+        self.mmr_mmr_diff_var = tk.IntVar()
+        self.mmr_mmr_diff_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_MMR_DIFFERENCE, variable=self.mmr_mmr_diff_var, command=None, bg="#EDEEF3").grid(row=8, column=0)
+        self.mmr_streak_var = tk.IntVar()
+        self.mmr_streak_var.set(1)
+        tk.Checkbutton(box, text=lang.WELCOME_MMR_STREAK, variable=self.mmr_streak_var, command=self.update_mmr, bg="#EDEEF3").grid(row=9, column=0)
 
         self.bind('<Return>', self.new)
 
@@ -325,10 +329,11 @@ class WelcomeWindow(dialog.Dialog):
         self.interval2_scale["label"] = lang.TIME_FORMAT.format(hour%24, minute)
 
     def update_mmr(self, event=None):
-        if "streak" in self.mmrvar.get():
+        if self.mmr_streak_var.get():
+        # if "streak" in self.mmrvar.get():
             if not self.tag_rendered:
-                self.taglabel.grid(row=8, column=0, pady=int(self.gui.default_size / 2))
-                self.tagmenu.grid(row=9, column=0)
+                self.taglabel.grid(row=10, column=0, pady=int(self.gui.default_size / 2))
+                self.tagmenu.grid(row=11, column=0)
                 self.tag_rendered = True
         else:
             if self.tag_rendered:
@@ -364,9 +369,10 @@ class WelcomeWindow(dialog.Dialog):
         self.withdraw()
         self.update_idletasks()
 
-        names, mmr = self.gui.in_players()
+        names, mmr, female_count = self.gui.in_players()
         self.gui.tur = turnier.Turnier(names, mmr, courts=self.cvar.get(), courts13=self.cvar_outer.get(), start_time=starttime, duration=duration, t1=t1, t2=t2, t3=t3,
-                                       matchmaking=turnier.MMR_METHODS.index(self.mmrvar.get()), matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), teamsize=self.tvar.get())
+                                       matchmaking=[self.mmr_score_diff_var.get(), self.mmr_mmr_diff_var.get(), self.mmr_streak_var.get()],
+                                       matchmaking_tag=turnier.MMR_TAGS.index(self.mmrtagvar.get()), females=female_count, teamsize=self.tvar.get())
 
         self.cancel()
 
@@ -413,6 +419,9 @@ class GameNumberWindow(dialog.Dialog):
         for pp3, play3 in enumerate(self.playlist3):
             buttonlist.append(tk.Radiobutton(gridframe, text=str(play3), variable=self.gui.game_count, value=play3, bg="#EDEEF3"))
             buttonlist[-1].grid(row=6, column=1 + pp3)
+        tk.Label(gridframe, text=lang.GAME_NUMBER_UNCONSTRAINED, bg="#EDEEF3").grid(row=7)
+        buttonlist.append(tk.Radiobutton(gridframe, text=str(turnier.UNCONSTRAINED_GAME_NUMBER), variable=self.gui.game_count, value=-1, bg="#EDEEF3"))
+        buttonlist[-1].grid(row=7, column=1)
         gridframe.pack()
         return buttonlist[0]
 
@@ -657,7 +666,10 @@ class GUI:
                     offs += 1
                 hour = int(tim/100)
                 minute = int(tim-hour*100)
-                self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
+                if self.tur.g_list[1] == turnier.UNCONSTRAINED_GAME_NUMBER:     # if we are in unconstrained game number mode, leave out the time
+                    self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d}").format(id + 1), bg="#EDEEF3"))
+                else:
+                    self.schedule_labels.append(tk.Label(self.schedule_table, text=("{:02d} - " + lang.TIME_FORMAT).format(id+1, hour, minute), bg="#EDEEF3"))
                 self.schedule_labels[id].grid(row=(id+offs)%self.table_height, column=int((id+offs)/self.table_height), ipadx = int(self.default_size/2))
             self.schedule_labels[0]["fg"] = "dark green"
             self.schedule_table.grid(row=3,column=1)
@@ -689,7 +701,7 @@ class GUI:
             self.game_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.result_but = tk.Button(buttonbox, text=lang.ENTER_RESULT_BUTTON, command=self.enter_results, state=tk.DISABLED, bg="#EDEEF3")
             self.result_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
-            self.sets = 2
+            self.sets = 1
             self.stats_but = tk.Button(buttonbox, text=lang.STATS_BUTTON, command=self.show_stats, bg="#EDEEF3")
             self.stats_but.pack(side=tk.LEFT, padx=int(self.default_size/2), pady=self.default_size)
             self.disp_mmr_var = tk.IntVar()
@@ -770,15 +782,20 @@ class GUI:
             filecontent = f.readlines()
         names = []
         init_mmr = []
+        male_count = 1000
         for st in filecontent:
             spl = st.split()
             if len(spl) > 1 and isfloat(spl[-1]):
                 init_mmr.append(float(spl[-1]))
                 names.append(" ".join(spl[:-1]))
+            elif '=' in spl[0]:  # Separator that contains '='. Female players follow after separator.
+                male_count = len(names)
             else:
                 init_mmr.append(0)
                 names.append(" ".join(spl))
-        return names, init_mmr
+        female_count = max(0, len(names)-male_count)
+
+        return names, init_mmr, female_count
 
     def in_court_names(self):
         filename = FILENAME_COURTS
@@ -839,7 +856,7 @@ class GUI:
         names_sorted = self.tur.players.name[team_indices]
         if self.tur.display_mmr:
             mmr_sorted = self.tur.players.mmr[team_indices]
-            mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
+            mmr_mean = np.sum(mmr_sorted.astype(float), axis=1)
         for i in range(int(len(team_indices)/2)):
             for pi in range(self.tur.teamsize):
                 self.pl_labels[team_indices[2*i][pi]]["fg"] = "dark green"
@@ -851,7 +868,7 @@ class GUI:
                 lbl2 += (names_sorted[2 * i + 1][pi] + "/") if pi < self.tur.teamsize - 1 else names_sorted[2 * i + 1][pi]
             self.game_labels[i]["text"] = lbl1 + " - " + lbl2
             if self.tur.display_mmr:
-                self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
+                self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (Σ{:.2f}) - {:.1f}/{:.1f} (Σ{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 self.mmr_labels[i]["text"] = ""
         for ii in range(i+1,max(self.tur.c13,self.tur.c2)):   #continue loop here one existing labels for a court that is not used / not available at the moment, and delete text
@@ -912,9 +929,9 @@ class GUI:
             team_indices = self.tur.games[-1]
             if self.tur.display_mmr:
                 mmr_sorted = self.tur.players.mmr[team_indices]
-                mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
+                mmr_mean = np.sum(mmr_sorted.astype(float), axis=1)
                 for i in range(len(team_indices) // 2):
-                    self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
+                    self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (Σ{:.2f}) - {:.1f}/{:.1f} (Σ{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 for i in range(len(team_indices) // 2):
                     self.mmr_labels[i]["text"] = ""
