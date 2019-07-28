@@ -362,94 +362,104 @@ class Turnier:
                 self.c = self.c13
         ret = 0    #0 no matrix reset, 1 regular matrix reset, 2 error matrix reset
         #WAITING
-        waiting_this_turn = self.canwait(wait_request)
-        wr = len(waiting_this_turn)
         # In some cases it is preferred to preserve the female-male ratio in the group of waiting people
         gender_specific = False  # For strongly differing male and female counts this is counter-productive (because then we can rarely play minority games in the end)
         if (0.6 > self.female_ratio > 0.4) and 0 == (self.teamsize % 2):
             gender_specific = True  # except for this case, then it makes sense
-        male_wr = len(np.nonzero(waiting_this_turn < (self.p-self.females))[0])   # how many male players have requested to wait
-        female_wr = wr - male_wr                                                  # same for female
-        wmale = int(self.w*(1-self.female_ratio))-male_wr                  # how many male players still have to be selected to wait
-        wfemale = int(self.w*self.female_ratio)-female_wr                  # same for female
-                                                                           # In the usual case, male_wr + female_wr + wmale + wfemale = w-1 and not = w, because of the truncation
-                                                                           # Thus, the last waiting player must be chosen randomly from both groups
-        wrandom = self.w - wr - wmale - wfemale                            # This variable hold the number of players to choose randomly. It is either 0 or 1
+        ok = False
+        while not ok:      # In some cases, the gender-specific selection seemed to lead to players waiting more than max_wait. I'm not sure how to fix that, so after gender-specific selection, check
+                        # whether no player has more wait than max_wait. Otherwise ok is set to false. Edit: I am not sure whether this actually happens, might have been
+                        # a different issue. But I leave it that way, because it is not harmful.
+            ok = True
+            waiting_this_turn = self.canwait(wait_request)
+            wr = len(waiting_this_turn)
+            male_wr = len(np.nonzero(waiting_this_turn < (self.p-self.females))[0])   # how many male players have requested to wait
+            female_wr = wr - male_wr                                                  # same for female
+            wmale = int(self.w*(1-self.female_ratio))-male_wr                  # how many male players still have to be selected to wait
+            wfemale = int(self.w*self.female_ratio)-female_wr                  # same for female
+                                                                               # In the usual case, male_wr + female_wr + wmale + wfemale = w-1 and not = w, because of the truncation
+                                                                               # Thus, the last waiting player must be chosen randomly from both groups
+            wrandom = self.w - wr - wmale - wfemale                            # This variable hold the number of players to choose randomly. It is either 0 or 1
 
-        self.i += 1        # increment game counter
-        done = (wr == self.w)
-        while not done:
-            not_waiting = np.setdiff1d(self.players.index, waiting_this_turn)
-            min_wait = np.min(self.players.wait[not_waiting])
-            min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], not_waiting)
-            male_min_ind = min_indices[np.nonzero(min_indices < (self.p - self.females))[0]]     # All male players that are available for waiting
-            female_min_ind = min_indices[np.nonzero(min_indices >= (self.p - self.females))[0]]  # same for female
-            malediff = len(male_min_ind) - wmale                                    # This is <= 0 if we can select all male players in this iteration and < 0 if we need to continue in the next
-            femalediff = len(female_min_ind) - wfemale                              # Same for female
-            wmale_this = min(len(male_min_ind), wmale)
-            wfemale_this = min(len(female_min_ind), wfemale)
-            wmale -= wmale_this
-            wfemale -= wfemale_this
-            # We are done after this iteration if we can select all players in this iteration: male, female and random (in case gender_specific is set)
-            # Otherwise we just select randomly - with the analogue terminating condition
-            if gender_specific:
-                if malediff >= 0 and femalediff >= 0:
-                    if malediff+femalediff >= wrandom:
-                        todo_list = ["male", "female", "random"]
+            self.i += 1        # increment game counter
+            done = (wr == self.w)
+            while not done:
+                not_waiting = np.setdiff1d(self.players.index, waiting_this_turn)
+                min_wait = np.min(self.players.wait[not_waiting])
+                min_indices = np.intersect1d(np.where(min_wait == self.players.wait)[0], not_waiting)
+                male_min_ind = min_indices[np.nonzero(min_indices < (self.p - self.females))[0]]     # All male players that are available for waiting
+                female_min_ind = min_indices[np.nonzero(min_indices >= (self.p - self.females))[0]]  # same for female
+                malediff = len(male_min_ind) - wmale                                    # This is <= 0 if we can select all male players in this iteration and < 0 if we need to continue in the next
+                femalediff = len(female_min_ind) - wfemale                              # Same for female
+                wmale_this = min(len(male_min_ind), wmale)
+                wfemale_this = min(len(female_min_ind), wfemale)
+                wmale -= wmale_this
+                wfemale -= wfemale_this
+                # We are done after this iteration if we can select all players in this iteration: male, female and random (in case gender_specific is set)
+                # Otherwise we just select randomly - with the analogue terminating condition
+                if gender_specific:
+                    if malediff >= 0 and femalediff >= 0:
+                        if malediff+femalediff >= wrandom:
+                            todo_list = ["male", "female", "random"]
+                            done = True
+                        else:
+                            # We select both male and female, but go to the next iteration to select the random
+                            todo_list = ["male", "female"]
+                            pass
+                    elif malediff >= 0 and femalediff < 0:
+                        # If we can select all male but not all female
+                        if malediff - wrandom <= 0:
+                            # If we can do one random after the males and then go to the next iteration to continue
+                            todo_list = ["male", "female", "random"]
+                        else:
+                            # If we cannot do that, it does not work out. We select randomly
+                            gender_specific = False
+                    elif malediff < 0 and femalediff >= 0:
+                        if femalediff - wrandom <= 0:
+                            todo_list = ["male", "female", "random"]
+                        else:
+                            gender_specific = False
+                    else:
+                        # We select all and then go to the next iteration
+                        todo_list = ["male", "female"]
+
+                if gender_specific:
+                    for what_to_do in todo_list:
+                        if what_to_do == "male":
+                            if wmale_this == 0:
+                                continue
+                            wait_prob_male = self.players.wait_prob[male_min_ind]
+                            probs_male = wait_prob_male.astype(float) / np.sum(wait_prob_male)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(male_min_ind, wmale_this, replace=False, p=probs_male)))
+                        elif what_to_do == "female":
+                            if wfemale_this == 0:
+                                continue
+                            wait_prob_female = self.players.wait_prob[female_min_ind]
+                            probs_female = wait_prob_female.astype(float) / np.sum(wait_prob_female)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(female_min_ind, wfemale_this, replace=False, p=probs_female)))
+                        elif wrandom > 0:
+                            min_indices_this = np.setdiff1d(min_indices, waiting_this_turn)  # These are left from min_indices
+                            if len(min_indices_this) == 0:
+                                continue
+                            wait_prob = self.players.wait_prob[min_indices_this]
+                            probs = wait_prob.astype(float) / np.sum(wait_prob)
+                            waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices_this, wrandom, replace=False, p=probs)))
+                            wrandom = 0
+                else:
+                    # random selection
+                    wdif = self.w - len(waiting_this_turn)    # We need to select the missing waiting players
+                    if wdif <= len(min_indices):              # But we can select at max the number of min_indices
                         done = True
                     else:
-                        # We select both male and female, but go to the next iteration to select the random
-                        todo_list = ["male", "female"]
-                        pass
-                elif malediff >= 0 and femalediff < 0:
-                    # If we can select all male but not all female
-                    if malediff - wrandom <= 0:
-                        # If we can do one random after the males and then go to the next iteration to continue
-                        todo_list = ["male", "random"]
-                    else:
-                        # If we cannot do that, it does not work out. We select randomly
-                        gender_specific = False
-                elif malediff < 0 and femalediff >= 0:
-                    if femalediff - wrandom <= 0:
-                        todo_list = ["female", "random"]
-                    else:
-                        gender_specific = False
-                else:
-                    # We select all and then go to the next iteration
-                    todo_list = ["male", "female"]
-
-            if gender_specific:
-                for what_to_do in todo_list:
-                    if what_to_do == "male":
-                        if wmale_this == 0:
-                            continue
-                        wait_prob_male = self.players.wait_prob[male_min_ind]
-                        probs_male = wait_prob_male.astype(float) / np.sum(wait_prob_male)
-                        waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(male_min_ind, wmale_this, replace=False, p=probs_male)))
-                    elif what_to_do == "female":
-                        if wfemale_this == 0:
-                            continue
-                        wait_prob_female = self.players.wait_prob[female_min_ind]
-                        probs_female = wait_prob_female.astype(float) / np.sum(wait_prob_female)
-                        waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(female_min_ind, wfemale_this, replace=False, p=probs_female)))
-                    elif wrandom > 0:
-                        min_indices_this = np.setdiff1d(min_indices, waiting_this_turn)  # These are left from min_indices
-                        if len(min_indices_this) == 0:
-                            continue
-                        wait_prob = self.players.wait_prob[min_indices_this]
-                        probs = wait_prob.astype(float) / np.sum(wait_prob)
-                        waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices_this, wrandom, replace=False, p=probs)))
-                        wrandom = 0
-            else:
-                # random selection
-                wdif = self.w - len(waiting_this_turn)    # We need to select the missing waiting players
-                if wdif <= len(min_indices):              # But we can select at max the number of min_indices
-                    done = True
-                else:
-                    wdif = len(min_indices)
-                wait_prob = self.players.wait_prob[min_indices]
-                probs = wait_prob.astype(float) / np.sum(wait_prob)
-                waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
+                        wdif = len(min_indices)
+                    wait_prob = self.players.wait_prob[min_indices]
+                    probs = wait_prob.astype(float) / np.sum(wait_prob)
+                    waiting_this_turn = np.concatenate((waiting_this_turn, np.random.choice(min_indices, wdif, replace=False, p=probs)))
+            # here waiting_this_turn is finished
+            # we need to check if it is valid and otherwise set ok to False
+            if np.any(self.players[waiting_this_turn].wait > self.maxwait):
+                ok = False
+                print("not ok.")
 
 
         # LEGACY:
@@ -660,6 +670,11 @@ class Turnier:
                     self.second_half_start = self.g  # no second half. we can always play mixed (At least in case of even team size)
                     self.minor_partner_matrix = np.eye(self.p)
                     self.minor_mask = np.zeros((self.p, self.p))
+        else:
+            if first:
+                self.second_half_start = self.g  # no second half. we can always play mixed (At least in case of even team size)
+                self.minor_partner_matrix = np.eye(self.p)
+                self.minor_mask = np.zeros((self.p, self.p))
 
     # def game_announce_end(self, message_prefix=""):
     #     if self.display_mmr and self.matchmaking:
