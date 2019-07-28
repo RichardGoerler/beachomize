@@ -850,7 +850,7 @@ class GUI:
         names_sorted = self.tur.players.name[team_indices]
         if self.tur.display_mmr:
             mmr_sorted = self.tur.players.mmr[team_indices]
-            mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
+            mmr_mean = np.sum(mmr_sorted.astype(float), axis=1)
         for i in range(int(len(team_indices)/2)):
             for pi in range(self.tur.teamsize):
                 self.pl_labels[team_indices[2*i][pi]]["fg"] = "dark green"
@@ -862,7 +862,7 @@ class GUI:
                 lbl2 += (names_sorted[2 * i + 1][pi] + "/") if pi < self.tur.teamsize - 1 else names_sorted[2 * i + 1][pi]
             self.game_labels[i]["text"] = lbl1 + " - " + lbl2
             if self.tur.display_mmr:
-                self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
+                self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (Σ{:.2f}) - {:.1f}/{:.1f} (Σ{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 self.mmr_labels[i]["text"] = ""
         for ii in range(i+1,max(self.tur.c13,self.tur.c2)):   #continue loop here one existing labels for a court that is not used / not available at the moment, and delete text
@@ -923,9 +923,9 @@ class GUI:
             team_indices = self.tur.games[-1]
             if self.tur.display_mmr:
                 mmr_sorted = self.tur.players.mmr[team_indices]
-                mmr_mean = np.mean(mmr_sorted.astype(float), axis=1)
+                mmr_mean = np.sum(mmr_sorted.astype(float), axis=1)
                 for i in range(len(team_indices) // 2):
-                    self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (ø{:.2f}) - {:.1f}/{:.1f} (ø{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
+                    self.mmr_labels[i]["text"] = "{:.1f}/{:.1f} (Σ{:.2f}) - {:.1f}/{:.1f} (Σ{:.2f})".format(mmr_sorted[2 * i][0], mmr_sorted[2 * i][1], mmr_mean[2 * i], mmr_sorted[2 * i + 1][0], mmr_sorted[2 * i + 1][1], mmr_mean[2 * i + 1])
             else:
                 for i in range(len(team_indices) // 2):
                     self.mmr_labels[i]["text"] = ""
