@@ -15,11 +15,11 @@ Spielpaarungen werden auf Basis der Spielstärkewerte (MMR - match making rating
 Funktionen
 --------
 ### Turnier-Einstellungen
-![welcome](https://beachomize.de/image/welcome_ger1.png)
+![welcome](https://beachomize.de/image/welcome_ger1_2.png)
 
 Anzahl der Felder, Teamgröße, Startzeit und Dauer, und die Art des Matchmakings sind wählbar. Falls nicht alle Felder über die gesamte Dauer des Turniers zur Verfügung stehen, können drei Zeitintervalle mit zwei verschiedenen Feld-Anzahlen definiert werden.
 ### Beliebige Anzahl an Spielern (auch ungerade oder prim)
-![game_number](https://beachomize.de/image/game_number_ger1.png)
+![game_number](https://beachomize.de/image/game_number_ger1_2.png)
 
 Es werden Vorschläge für die Anzahl der zu spielenden Spiele berechnet. Wenn Spieler 1 außer Konkurrenz bleibt, ist die Anzahl der Spiele flexibler.
 ### Spieler können auf Wunsch pausieren
