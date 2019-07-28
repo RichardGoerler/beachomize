@@ -15,11 +15,11 @@ After creating teams, fixtures are set based on MMR (match making rating) of eac
 Features
 --------
 ### Customize your tournament
-![welcome](https://beachomize.de/image/welcome1_2.png)
+![welcome](https://beachomize.de/image/welcome_1_2.png)
 
 Set number of courts, team size, time and duration, and matchmaking method. For the case that not all courts are available all the time, three time intervals with two different court counts can be defined.
 ### Handle any number of players (odd / prime)
-![game_number](https://beachomize.de/image/game_number1_2.png)
+![game_number](https://beachomize.de/image/game_number_1_2.png)
 
 Get suggestions for number of games to play. Adjust the game number by letting player 1 run "outside the competition".
 ### Let players request to wait
