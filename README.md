@@ -4,7 +4,7 @@ beachomize
 ==========
 Software for organizing shuffled beach volleyball tournaments with a matchmaking algorithm. Implemented in Python and Tkinter.
 
-![main_example](https://beachomize.de/image/main_example.png)
+![main_example](https://drive.google.com/uc?export=download&id=1cazkhPI0yIkikSYS4OV3AdZZrIzxfh2P)
 
 ### Game mode
 #### Shuffling
@@ -15,21 +15,21 @@ After creating teams, fixtures are set based on MMR (match making rating) of eac
 Features
 --------
 ### Customize your tournament
-![welcome](https://beachomize.de/image/welcome_1_2.png)
+![welcome](https://drive.google.com/uc?export=download&id=1D6ntZGc2uNoURCeuz149HdSqn8XsYLaB)
 
 Set number of courts, team size, time and duration, and matchmaking method. For the case that not all courts are available all the time, three time intervals with two different court counts can be defined.
 ### Handle any number of players (odd / prime)
-![game_number](https://beachomize.de/image/game_number_1_2.png)
+![game_number](https://drive.google.com/uc?export=download&id=1wZafAKZSsYBJMVZ5TEzniqYxzaSDEBfR)
 
 Get suggestions for number of games to play. Adjust the game number by letting player 1 run "outside the competition".
 ### Let players request to wait
-![wait_select](https://beachomize.de/image/wait_select.png)
+![wait_select](https://drive.google.com/uc?export=download&id=1Vp_i3ig8NhhKRuE6mYN4h1jUuE6aoPPr)
 
 Usually the players that wait are randomly determined each round, but players can also request to skip a round.
 ### Non-repeating team compositions
 As long as it is possible, no player will have the same teammate twice. Works only for teams of two.
 ### Adjust appearance
-![settings](https://beachomize.de/image/settings.png)
+![settings](https://drive.google.com/uc?export=download&id=1bhnWq-dfHTIyke0wQ1qOwjZBQucMlZ5F)
 ### Auto-save
 The state of the tournament is automatically saved on the hard drive to avoid data loss, for example when the window is closed accidentally. The most recent auto-save can be loaded on start-up.
 ### Localization
